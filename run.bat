@@ -1,0 +1,1 @@
+python run_dtrpo.py --env Pendulum --mode train --seed 0 --delay 3 --epochs 1000 --steps_per_epoch 5000 --max_ep_len 250 --delta 0.001 --v_hid 64 --v_l 1 --vf_lr 0.01 --v_iters 3 --pi_hid 64 --pi_l 2 --pretrain_epochs 2 --pretrain_steps 10000 --size_pred_buf 100000 --batch_size_pred 10000 --train_enc_iters 1 --enc_lr 0.005 --enc_dim 64 --enc_causal --force_stoch_env
