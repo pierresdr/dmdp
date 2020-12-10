@@ -57,6 +57,7 @@ if __name__ == '__main__':
 
     # Train Transformer Encoder Specific Arguments
     parser.add_argument('--pretrain_epochs', type=int, default=50, help='Epochs for Encoder Pre-Training.')
+    parser.add_argument('--epochs_belief_training', type=int, default=200, help='Epochs for Encoder Pre-Training.')
     parser.add_argument('--pretrain_steps', type=int, default=5000, help='Epochs for Encoder Pre-Training.')
     parser.add_argument('--train_enc_iters', type=int, default=1, help='Encoder Adam Optimizer iterations per epoch.')
     parser.add_argument('--size_pred_buf', type=int, default=100000, help='Size of the prediction buffer.')

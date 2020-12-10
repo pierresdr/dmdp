@@ -25,7 +25,7 @@ class DTRPO:
                  backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None,
                  enc_lr=0.001, maf_lr=0.001, train_enc_iters=1, pretrain_epochs=50, pretrain_steps=5000, 
                  enc_loss='mse', stoch_env=False, size_pred_buf=4000, batch_size_pred=4000, train_continue=False,
-                 save_period=1,):
+                 save_period=1, epochs_belief_training=50,):
         """
         Trust Region Policy Optimization
         Schulman, John, et al. "Trust region policy optimization." International conference on machine learning. 2015.
@@ -101,6 +101,7 @@ class DTRPO:
 
         # Encoder Optimizer
         self.pretrain_epochs = pretrain_epochs
+        self.epochs_belief_training = epochs_belief_training
         self.pretrain_steps = pretrain_steps
         self.train_enc_iters = train_enc_iters
         self.enc_lr = enc_lr
@@ -216,6 +217,14 @@ class DTRPO:
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
         return kl_loss
 
+    # @torch.no_grad()
+    # def compute_kl_reg_for_belief(self, data, old_pi):
+    #     obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
+    #     # Policy loss
+    #     pi, logp = self.ac.pi(obs, act)
+    #     kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
+    #     return loss_pi, kl_loss
+
     @torch.no_grad()
     def compute_kl_loss_pi(self, data, old_pi):
         obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
@@ -238,7 +247,7 @@ class DTRPO:
 
         return flat_grad_grad_kl + v * self.damping_coeff
 
-    def update(self, pretrain=False):
+    def update(self, pretrain=False, stop_belief_training=False):
         # If Pretraining then optimize only the Encoder
         if pretrain:
             # Encoder Update
@@ -247,6 +256,19 @@ class DTRPO:
             # Value Function Loss Compatibility
             self.v_losses.append(np.nan)
             self.buf.reset()
+        # Stop training belief module
+        elif stop_belief_training:
+            self.enc_losses.append(np.nan)
+            data = self.buf.get()
+            obs = data['obs']
+            with torch.no_grad():
+                obs = self.ac.enc(obs).detach()
+            data['obs'] = obs
+            # Policy Update
+            self.update_pi(data)
+            # Value Function Update
+            v_loss = self.update_v(data)
+            self.v_losses.append(v_loss)
         # Else optimize Policy and Value Function
         else:
             enc_loss = self.update_enc()
@@ -322,6 +344,7 @@ class DTRPO:
             self.maf_optimizer.zero_grad()
             data = self.buf.get_pred_data()
             loss_enc = self.compute_loss_enc(data)
+            # kl_reg = compute_kl_reg_for_belief(self, data, old_pi)
             if i == self.train_enc_iters-1:
                 loss_enc.backward(retain_graph=True)
                 self.enc_optimizer.step()
@@ -361,6 +384,8 @@ class DTRPO:
         else: 
             o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
 
+        stop_belief_training = False
+
         # ---- TRAINING LOOP ----
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
@@ -372,6 +397,8 @@ class DTRPO:
             else:
                 pretrain = False
                 max_epoch_steps = self.steps_per_epoch
+            if self.epoch > self.epochs_belief_training:
+                stop_belief_training = True
             ep_rewards = []
             ep_lengths = []
             episode = 0
@@ -431,7 +458,7 @@ class DTRPO:
 
 
             # Perform TRPO update at the end of the Epoch
-            self.update(pretrain=pretrain)
+            self.update(pretrain=pretrain, stop_belief_training=stop_belief_training)
 
             self.elapsed_time = dt.now() - start_time
 
