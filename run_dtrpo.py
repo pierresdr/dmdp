@@ -133,7 +133,8 @@ if __name__ == '__main__':
                       lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
                       train_enc_iters=args.train_enc_iters, pretrain_epochs=args.pretrain_epochs,
                       pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, stoch_env=stoch_MDP, 
-                      size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred,)
+                      size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred, 
+                      epochs_belief_training=args.epochs_belief_training,)
 
         dtrpo.train()
 
