@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 
-class SARSA:
+class DSARSA:
 
     def __init__(self, env, seed=0, delay=3, epochs=200, steps=12500, max_steps=2500, lam=1.0, gamma=0.99, lr=0.3, e=0.3,
                  s_space=10, a_space=3, train_render=False, train_render_ep=1, save_dir='./output/sarsa'):
@@ -61,11 +61,20 @@ class SARSA:
         self.train_render = train_render
         self.train_render_ep = train_render_ep
 
-    def discretize(self, s):
+    def discretize_s(self, s):
         s = s[:self.state_dim]
         s = np.floor((s-self.low_s) / (self.high_s-self.low_s) * (self.s_space-1))
         s = np.sum([s[i] * (self.s_space ** i) for i in range(self.state_dim)])
         return int(s)
+
+    def discretize_a(self, s):
+        for i in np.arange(self.state_dim, len(s), 1):
+            s[i] = self.actions[np.abs(np.array(self.actions) - s[i]).argmin()]
+        return s
+
+    def index_a(self, a):
+        a = np.where(self.actions == a)
+        return a[0][0]
 
     def train(self):
         ep_rewards = []
@@ -74,19 +83,36 @@ class SARSA:
         for epoch in range(self.epochs):
             self.epoch = epoch + 1
             s = self.env.reset()
+            disc_steps = self.delay
             a = self.sample_a(s, e_greedy=True)
 
             ep_ret = 0
             ep_len = 0
             for step in range(self.steps):
-
+                # Next Step in the Environment to produce "s, a, r, s, a"
                 next_s, r, d, _ = self.env.step([self.actions[a]])
 
                 ep_ret += r
                 ep_len += 1
 
                 next_a = self.sample_a(next_s, e_greedy=True)
-                self.update(s, a, r, next_s, next_a)
+
+                # The Actions that the environment randomly samples to construct the first augmented state of the
+                # episode are not discretized, we need to associate them to the nearest discrete action in the Agent
+                # each time an episode starts for "delay" steps.
+                if disc_steps >= 0:
+                    s = self.discretize_a(s)
+                    next_s = self.discretize_a(next_s)
+                    disc_steps -= 1
+
+                # Retrieve the index of the actual action that has been executed in the environment in this step,
+                # rather than the action chosen by the agent this step. This action is the first action in the
+                # augmented state after the state.
+                a_act = self.index_a(s[self.state_dim:self.state_dim+1])
+                next_a_act = self.index_a(next_s[self.state_dim:self.state_dim+1])
+
+                # Update
+                self.update(s, a_act, r, next_s, next_a_act)
 
                 s = next_s
                 a = next_a
@@ -105,6 +131,7 @@ class SARSA:
                         ep_rewards.append(ep_ret)
                         ep_lengths.append(ep_len)
                         s = self.env.reset()
+                        disc_steps = self.delay
                         a = self.sample_a(s, e_greedy=True)
                         ep_len = 0
                         ep_ret = 0
@@ -122,8 +149,8 @@ class SARSA:
 
     def update(self, s, a, r, next_s, next_a):
         # State Discretization
-        s = self.discretize(s)
-        next_s = self.discretize(next_s)
+        s = self.discretize_s(s)
+        next_s = self.discretize_s(next_s)
 
         # Update Eligibility Traces
         self.eligibility = self.gamma * self.lam * self.eligibility
@@ -145,7 +172,7 @@ class SARSA:
         if e_greedy and np.random.rand() < self.e:
             action = np.random.choice(self.actions_index, p=self.probs)
         else:
-            s = self.discretize(s)
+            s = self.discretize_s(s)
             action = np.argmax(self.Q[s, :])
         return action
 
@@ -220,7 +247,7 @@ class SARSA:
             step = 0
             ep_ret = 0
             while step < max_steps:
-                s = self.discretize(s)
+                s = self.discretize_s(s)
                 a = np.argmax(self.Q[s, :])
 
                 next_s, r, d, _ = self.env.step([self.actions[a]])
