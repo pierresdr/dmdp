@@ -131,7 +131,6 @@ class PositiveCompoundBernoulliProcess(JumpProcess):
         return self.current, n_obs
 
 
-
 class DelayWrapper(Wrapper):
     def __init__(self, env, delay=0, stochastic_delays=False, p_delay=0.70, max_delay=50):
         super(DelayWrapper, self).__init__(env)
@@ -146,7 +145,7 @@ class DelayWrapper(Wrapper):
         # Create state and observation spaces
         self.state_space = self.observation_space
 
-        if self.action_space.__class__.__name__=='Discrete':
+        if self.action_space.__class__.__name__ == 'Discrete':
             size = self.action_space.n*self.delay.max
             stored_actions = spaces.Discrete(size)
         else:
@@ -156,12 +155,10 @@ class DelayWrapper(Wrapper):
             dtype = self.action_space.dtype
             stored_actions = spaces.Box(low=low, high=high, shape=shape, dtype=dtype)
 
-
         self.observation_space = spaces.Dict({
                 'last_obs': copy.deepcopy(self.observation_space),
                 'stored_actions': stored_actions,
         })
-
 
         # Delay Variables initialization
         self._hidden_obs = None

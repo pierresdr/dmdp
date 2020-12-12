@@ -1,9 +1,10 @@
-from importlib import import_module
-from utils.various import get_output_folder
 from algorithm.sarsa import SARSA
 from algorithm.dsarsa import DSARSA
+from utils.various import *
+from utils.delays import DelayWrapper
 import os
 import json
+import gym
 
 if __name__ == '__main__':
     import argparse
@@ -11,9 +12,8 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='MountainCarDelayEnv', type=str, choices=['CartPoleDelayEnv',
-                                                                                   'MountainCarDelayEnv',
-                                                                                   'PendulumDelayEnv'])
+    parser.add_argument('--env', default='Pendulum', type=str)
+
     parser.add_argument('--delay', type=int, default=30, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--seed', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
@@ -44,8 +44,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Environment Initialization
-    env = import_module('env.' + args.env)
-    env = getattr(env, args.env)
+    # ---- ENV INITIALIZATION ----
+    env = gym.make(args.env + '-v0')
+    # Add the delay wrapper
+    env = DelayWrapper(env, delay=args.delay)
 
     # Method Initialization
     if args.dsarsa:

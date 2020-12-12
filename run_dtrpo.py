@@ -10,7 +10,6 @@ from utils.delays import DelayWrapper
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trust Region Policy Optimization (PyTorch)')
-    
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
