@@ -3,8 +3,8 @@
   "env": "PendulumDelayEnv",
   "seed": 0,
   "delay": 3,
-  "stochastic_delays": false,
-  "max_delay": 50,
+  "stochastic_delays": true,
+  "max_delay": 25,
   "delay_proba": 0.7,
   "steps_per_epoch": 5000,
   "epochs": 500,
@@ -27,11 +27,11 @@
   "backtrack_iters": 10,
   "backtrack_coeff": 0.8,
   "lam": 0.97,
-  "pretrain_epochs": 2,
-  "pretrain_steps": 10000,
+  "pretrain_epochs": 50,
+  "pretrain_steps": 5000,
   "train_enc_iters": 2,
   "size_pred_buf": 100000,
-  "batch_size_pred": 10000,
+  "batch_size_pred": 5000,
   "enc_lr": 0.005,
   "maf_lr": 0.005,
   "enc_dim": 64,
@@ -50,5 +50,5 @@
   "n_blocks_maf": 5,
   "hidden_dim": 8,
   "hidden_dim_maf": 16,
-  "save_dir": "./output/dtrpo\\PendulumDelayEnv-Results\\PendulumDelayEnv-run1"
+  "save_dir": "./output/dtrpo/PendulumDelayEnv-Results/PendulumDelayEnv-run1"
 }
