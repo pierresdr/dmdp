@@ -196,7 +196,7 @@ class TRNGaussianActor(Actor):
 class TRNActorCritic(nn.Module):
     def __init__(self, obs_dim, action_space, state_space, enc_dim=128, enc_heads=2, enc_ff=8, enc_l=1, dropout=0.0,
                  enc_rescaling=False, enc_causal=False, pi_hidden_sizes=(64, 64), v_hidden_sizes=(64, 64),
-                 activation=nn.Tanh(), hidden_dim=8, pred_to_pi=False, lstm=False, n_layers=3, hidden_size=16,
+                 activation=nn.Tanh, hidden_dim=8, pred_to_pi=False, lstm=False, n_layers=3, hidden_size=16,
                  n_blocks_maf=5, hidden_dim_maf=16, stoch_env=False, conv=False, only_last_belief=False):
         super().__init__()
 

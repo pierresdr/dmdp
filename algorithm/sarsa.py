@@ -18,10 +18,10 @@ class SARSA:
         torch.manual_seed(self.seed)
 
         # Gym Environment
-        self.env = env(delay=delay)
+        self.env = env
         self.env.action_space.seed(seed)
         self.delay = delay
-        self.state_dim = self.env.observation_space.shape[0] - self.delay
+        self.state_dim = self.env.state_space.shape[0]
 
         # Training Parameters
         self.epochs = epochs
