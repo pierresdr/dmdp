@@ -18,10 +18,10 @@ class DSARSA:
         torch.manual_seed(self.seed)
 
         # Gym Environment
-        self.env = env(delay=delay)
+        self.env = env
         self.env.action_space.seed(seed)
         self.delay = delay
-        self.state_dim = self.env.observation_space.shape[0] - self.delay
+        self.state_dim = self.env.state_space.shape[0]
 
         # Training Parameters
         self.epochs = epochs
@@ -62,14 +62,14 @@ class DSARSA:
         self.train_render_ep = train_render_ep
 
     def discretize_s(self, s):
-        s = s[:self.state_dim]
+        s = s[0]
         s = np.floor((s-self.low_s) / (self.high_s-self.low_s) * (self.s_space-1))
         s = np.sum([s[i] * (self.s_space ** i) for i in range(self.state_dim)])
         return int(s)
 
     def discretize_a(self, s):
-        for i in np.arange(self.state_dim, len(s), 1):
-            s[i] = self.actions[np.abs(np.array(self.actions) - s[i]).argmin()]
+        for i in range(len(s[1])):
+            s[1][i] = self.actions[np.abs(np.array(self.actions) - s[1][i]).argmin()]
         return s
 
     def index_a(self, a):
@@ -92,7 +92,7 @@ class DSARSA:
                 # Next Step in the Environment to produce "s, a, r, s, a"
                 next_s, r, d, _ = self.env.step([self.actions[a]])
 
-                ep_ret += r
+                ep_ret += r.sum()
                 ep_len += 1
 
                 next_a = self.sample_a(next_s, e_greedy=True)
@@ -108,11 +108,11 @@ class DSARSA:
                 # Retrieve the index of the actual action that has been executed in the environment in this step,
                 # rather than the action chosen by the agent this step. This action is the first action in the
                 # augmented state after the state.
-                a_act = self.index_a(s[self.state_dim:self.state_dim+1])
-                next_a_act = self.index_a(next_s[self.state_dim:self.state_dim+1])
+                a_act = self.index_a(s[1][0])
+                next_a_act = self.index_a(next_s[1][0])
 
                 # Update
-                self.update(s, a_act, r, next_s, next_a_act)
+                self.update(s, a_act, r.sum(), next_s, next_a_act)
 
                 s = next_s
                 a = next_a

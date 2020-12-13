@@ -62,7 +62,7 @@ class SARSA:
         self.train_render_ep = train_render_ep
 
     def discretize(self, s):
-        s = s[:self.state_dim]
+        s = s[0]
         s = np.floor((s-self.low_s) / (self.high_s-self.low_s) * (self.s_space-1))
         s = np.sum([s[i] * (self.s_space ** i) for i in range(self.state_dim)])
         return int(s)
@@ -82,11 +82,11 @@ class SARSA:
 
                 next_s, r, d, _ = self.env.step([self.actions[a]])
 
-                ep_ret += r
+                ep_ret += r.sum()
                 ep_len += 1
 
                 next_a = self.sample_a(next_s, e_greedy=True)
-                self.update(s, a, r, next_s, next_a)
+                self.update(s, a, r.sum(), next_s, next_a)
 
                 s = next_s
                 a = next_a
