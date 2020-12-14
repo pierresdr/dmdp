@@ -187,7 +187,7 @@ class DelayWrapper(Wrapper):
                 logger.warn("The environment failed before delay timesteps.")
                 return self.reset()
             obs_before_start -= info[0]
-
+        
         return (self.extended_obs[0], np.array(self.extended_obs[1:]))
 
 

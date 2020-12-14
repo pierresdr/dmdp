@@ -379,7 +379,8 @@ class DTRPO:
         if self.stoch_env:
             # Create one hot encoding of the actions contained in the state
             temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                   for i in range(self.act_dim*len(o[1]))]).float()
+                                   for i in range(self.act_dim*len(o[1]))]).float()                    
+            
             o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
         else: 
             o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
