@@ -164,7 +164,7 @@ class Reverse(nn.Module):
                 inputs.size(0), inputs.size(1), 1, device=inputs.device)
         else:
             return inputs[:, self.inv_perm], torch.zeros(
-                inputs.size(0), 1, device=inputs.device)
+                inputs.size(0), inputs.size(1), 1, device=inputs.device)
 
 
 
@@ -219,8 +219,9 @@ class MAF(nn.Sequential):
         return (log_probs + log_jacob).sum(-1, keepdim=True)
 
     def sample(self, num_samples=None, noise=None, cond_inputs=None):
+        n_pred = 1 if cond_inputs is None else cond_inputs.size(1)
         if noise is None:
-            noise = torch.Tensor(num_samples, self.num_inputs).normal_()
+                noise = torch.Tensor(num_samples, n_pred, self.num_inputs).normal_()
         device = next(self.parameters()).device
         noise = noise.to(device)
         if cond_inputs is not None:

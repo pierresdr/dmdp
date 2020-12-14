@@ -207,17 +207,17 @@ class DTRPO:
         obs = obs[:num_samples]
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         ax.hist(obs.detach().numpy())
-        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
+        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_hidden_state.png'))
         plt.close(fig)
 
     def save_belief(self, obs):
         num_samples = min(obs.size(0),100)
         with torch.no_grad():
-                obs = self.ac.enc(obs).detach()
-        obs = obs[:num_samples]
-        samples = self.ac.enc.maf_proba.sample(num_samples=num_samples, cond_inputs=obs)
+                cond = self.ac.enc.get_cond(obs).detach()
+        cond = cond[:num_samples]
+        samples = self.ac.enc.maf_proba.sample(num_samples=num_samples, cond_inputs=cond)
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
-        ax.hist(samples.detach().numpy())
+        ax.hist(samples[:,-1,:].detach().numpy())
         plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
         plt.close(fig)
 
