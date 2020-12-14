@@ -215,7 +215,7 @@ class DTRPO:
         with torch.no_grad():
                 obs = self.ac.enc(obs).detach()
         obs = obs[:num_samples]
-        samples = self.ac.enc.maf_proba.sample(self, num_samples=num_samples, cond_inputs=obs)
+        samples = self.ac.enc.maf_proba.sample(num_samples=num_samples, cond_inputs=obs)
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         ax.hist(samples.detach().numpy())
         plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
