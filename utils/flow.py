@@ -96,6 +96,10 @@ class BatchNormFlow(nn.Module):
 
     def __init__(self, num_inputs, momentum=0.0, eps=1e-5):
         super(BatchNormFlow, self).__init__()
+        self.batch_mean = None
+        self.batch_mean = running_mean
+        self.batch_var = None
+        self.running_var = None
 
         self.log_gamma = nn.Parameter(torch.zeros(num_inputs))
         self.beta = nn.Parameter(torch.zeros(num_inputs))
@@ -174,6 +178,7 @@ class MAF(nn.Sequential):
     
     def __init__(self, n_blocks, input_dim, hidden_dim, cond_dim):
         modules = []
+        self.num_inputs = None
         for _ in range(n_blocks):
             modules += [
                 MADE(input_dim, hidden_dim, cond_dim),

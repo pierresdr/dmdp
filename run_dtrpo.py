@@ -141,7 +141,7 @@ if __name__ == '__main__':
     elif args.mode == 'test':
         # Recover parameters of the trained model
         args.save_model = next(filter(lambda x: '.pt' in x, os.listdir(args.save_dir)))
-        model_path = os.path.join(args.save_dir, args.save_model)
+        # model_path = os.path.join(args.save_dir, args.save_model)
         load_parameters = os.path.join(args.save_dir, 'model_parameters.txt')
         with open(load_parameters) as text_file:
             file_args = json.load(text_file)

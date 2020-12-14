@@ -190,8 +190,8 @@ class DTRPO:
         if self.epoch%self.save_period==0:
             self.save_noise(u)
             self.save_proba(log_probs)
-            self.save_belief(obs)
-            self.save_hidden_state(obs)
+            # self.save_belief(obs)
+            # self.save_hidden_state(obs)
         return -log_probs.mean()
 
     def save_proba(self, log_probs):
