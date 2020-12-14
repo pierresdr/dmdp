@@ -368,6 +368,16 @@ class DTRPO:
             self.vf_optimizer.step()
         return loss_v.detach().item()
 
+    def format_o(self, o):
+        if self.stoch_env:
+            # Create one hot encoding of the actions contained in the state
+            temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
+                                   for i in range(self.act_dim*len(o[1]))]).float()
+            o = torch.cat((torch.tensor(o[0]).float(), temp_o.reshape(-1)))
+        else:
+            o = torch.cat((torch.tensor(o[0]).float(), torch.tensor(o[1]).reshape(-1)))
+        return o
+
     def train(self):
         # Load previous training final data in order to continue from there
         if self.train_continue:
@@ -376,20 +386,15 @@ class DTRPO:
         # Prepare for interaction with environment
         start_time = dt.now()
         o, ep_ret, ep_len = self.env.reset(), 0, 0
-        if self.stoch_env:
-            # Create one hot encoding of the actions contained in the state
-            temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                   for i in range(self.act_dim*len(o[1]))]).float()
-            o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-        else: 
-            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+
+        # Handle the Observation format
+        o = self.format_o(o)
 
         stop_belief_training = False
 
         # ---- TRAINING LOOP ----
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
-
 
             if self.epoch < self.pretrain_epochs:
                 pretrain = True
@@ -409,13 +414,8 @@ class DTRPO:
 
                 next_o, r, d, info = self.env.step(a.reshape(-1))
 
-                if self.stoch_env:
-                    # Create one hot encoding of the actions contained in the state
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
-                                           for i in range(self.act_dim*len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else: 
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
+                # Handle the Observation format
+                next_o = self.format_o(next_o)
 
                 ep_ret += np.sum(r)
                 ep_len += 1
@@ -444,22 +444,16 @@ class DTRPO:
                         # Only print EpRet and EpLen if trajectory finished
                         ep_rewards.append(ep_ret)
                         ep_lengths.append(ep_len)
-                    o, ep_ret, ep_len = self.env.reset(), 0, 0
 
-                    if self.stoch_env:
-                        # Create one hot encoding of the actions contained in the state
-                        temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                               for i in range(self.act_dim*len(o[1]))]).float()
-                        o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-                    else: 
-                        o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+                    o, ep_ret, ep_len = self.env.reset(), 0, 0
+                    o = self.format_o(o)
 
                     episode += 1
-
 
             # Perform TRPO update at the end of the Epoch
             self.update(pretrain=pretrain, stop_belief_training=stop_belief_training)
 
+            # Record timings
             self.elapsed_time = dt.now() - start_time
 
             # Gather Epoch results and print them
@@ -468,7 +462,7 @@ class DTRPO:
             self.avg_length.append(np.average(ep_lengths))
             self.timings.append(self.elapsed_time)
             self.print_update()
-            if epoch%self.save_period==0:
+            if epoch % self.save_period == 0:
                 self.save_session()
             self.save_results()
 
@@ -503,10 +497,10 @@ class DTRPO:
             files_name = os.listdir(self.save_dir)
             files_name.remove('model_parameters.txt')
             models = list(filter(lambda n: "model" in n,  files_name))
-            if len(models)==1:
+            if len(models) == 1:
                 load_path = os.path.join(self.save_dir, 'model.pt')
             else: 
-                temp = np.array([int(name.replace('model_','').replace('.pt','')) for name in iter(models)])
+                temp = np.array([int(name.replace('model_', '').replace('.pt', '')) for name in iter(models)])
                 load_path = os.path.join(self.save_dir, 'model_'+str(max(temp)-1)+'.pt')
         else:
             load_path = os.path.join(self.save_dir, 'model_'+str(epoch)+'.pt')
@@ -551,21 +545,13 @@ class DTRPO:
     def test(self, test_episodes=10, max_steps=250, epoch=None):
         self.load_session(epoch)
         episode = 0
-
         reward = []
 
         # ---- TESTING LOOP ----
         while episode < test_episodes:
             self.ac.pi.eval()
             o = self.env.reset()
-
-            if self.stoch_env:
-                temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
-                                       for i in range(self.act_dim * len(o[1]))]).float()
-                o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-            else: 
-                o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
-
+            o = self.format_o(o)
 
             # For each Step
             step = 0
@@ -573,25 +559,12 @@ class DTRPO:
             while step < max_steps:
                 a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
                 next_o, r, d, _ = self.env.step(a.reshape(-1))
-
-                if self.stoch_env:
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
-                                           for i in range(self.act_dim*len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else:
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
-
-
-                o = next_o
-
-                self.env.render()
-
+                o = self.format_o(next_o)
+                # self.env.render()
                 ep_ret += np.sum(r)
                 step += 1
-
                 if d:
                     break
-
             episode += 1
 
             # Print Episode Result
@@ -603,9 +576,10 @@ class DTRPO:
             reward.append(ep_ret)
 
         # Save test results
+        save_path = None
         if epoch is not None: 
             save_path = os.path.join(self.save_dir, 'test_result_'+str(epoch)+'.pt')
-        elif self.stochastic_delays:
+        elif self.env.stochastic_delays:
             os.path.join(self.save_dir, 'test_result_' + str(self.env.delay.p) + '.pt')
         else:
             save_path = os.path.join(self.save_dir, 'test_result.pt')
