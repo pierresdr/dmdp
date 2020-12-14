@@ -97,9 +97,9 @@ class BatchNormFlow(nn.Module):
     def __init__(self, num_inputs, momentum=0.0, eps=1e-5):
         super(BatchNormFlow, self).__init__()
         self.batch_mean = None
-        self.batch_mean = None
+        # self.running_mean = None
         self.batch_var = None
-        self.running_var = None
+        # self.running_var = None
 
         self.log_gamma = nn.Parameter(torch.zeros(num_inputs))
         self.beta = nn.Parameter(torch.zeros(num_inputs))
