@@ -1,8 +1,10 @@
-from importlib import import_module
-from utils.various import get_output_folder
 from algorithm.sarsa import SARSA
+from algorithm.dsarsa import DSARSA
+from utils.various import *
+from utils.delays import DelayWrapper
 import os
 import json
+import gym
 
 if __name__ == '__main__':
     import argparse
@@ -10,9 +12,8 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='MountainCarDelayEnv', type=str, choices=['CartPoleDelayEnv',
-                                                                                   'MountainCarDelayEnv',
-                                                                                   'PendulumDelayEnv'])
+    parser.add_argument('--env', default='Pendulum', type=str)
+
     parser.add_argument('--delay', type=int, default=30, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--seed', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
@@ -28,9 +29,10 @@ if __name__ == '__main__':
     parser.add_argument('--test_steps', type=int, default=250, help='Number of Steps per Test Episode.')
 
     # SARSA Specific Arguments
+    parser.add_argument('--dsarsa',  action='store_true', help='Whether to use DSARSA or SARSA.')
     parser.add_argument('--gamma', type=float, default=0.99, help='Discount Factor.')
     parser.add_argument('--lam', type=float, default=0.9, help='Eligibility Traces Factor.')
-    parser.add_argument('--lr', type=float, default=0.3, help='Learning Rate.')
+    parser.add_argument('--lr', type=float, default=0.1, help='Learning Rate.')
     parser.add_argument('--e', type=float, default=0.2, help='E-Greedy Policy Parameter.')
 
     # Discretization Specific Arguments
@@ -42,8 +44,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Environment Initialization
-    env = import_module('env.' + args.env)
-    env = getattr(env, args.env)
+    # ---- ENV INITIALIZATION ----
+    env = gym.make(args.env + '-v0')
+    # Add the delay wrapper
+    env = DelayWrapper(env, delay=args.delay)
+
+    # Method Initialization
+    if args.dsarsa:
+        sarsa = DSARSA
+        args.save_dir = './output/dsarsa'
+    else:
+        sarsa = SARSA
 
     # ---- TRAIN MODE ---- #
     if args.mode == 'train':
@@ -51,7 +62,7 @@ if __name__ == '__main__':
         with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
             json.dump(args.__dict__, text_file, indent=2)
 
-        agent = SARSA(env, delay=args.delay, seed=args.seed, epochs=args.epochs, steps=args.steps_per_epoch,
+        agent = sarsa(env, seed=args.seed, delay=args.delay, epochs=args.epochs, steps=args.steps_per_epoch,
                       max_steps=args.max_ep_len, lam=args.lam, gamma=args.gamma, lr=args.lr, e=args.e,
                       s_space=args.s_space, a_space=args.a_space, save_dir=args.save_dir,
                       train_render=args.train_render, train_render_ep=args.train_render_ep)
@@ -66,6 +77,6 @@ if __name__ == '__main__':
         with open(load_parameters) as text_file:
             file_args = json.load(text_file)
 
-        agent = SARSA(env, delay=args.delay, save_dir=args.save_dir)
+        agent = sarsa(env, delay=args.delay, save_dir=args.save_dir)
 
         agent.test(test_episodes=args.test_episodes, max_steps=args.test_steps)

@@ -35,7 +35,7 @@
   "train_enc_iters": 1,
   "size_pred_buf": 500000,
   "batch_size_pred": 10000,
-  "enc_lr": 0.0005,
+  "enc_lr": 0.005,
   "maf_lr": 0.005,
   "enc_dim": 64,
   "enc_heads": 2,
@@ -52,5 +52,5 @@
   "n_blocks_maf": 5,
   "hidden_dim": 8,
   "hidden_dim_maf": 16,
-  "save_dir": "./output/dtrpo/Pendulum-Results/Pendulum-run4"
+  "save_dir": "./output/dtrpo\\Pendulum-Results\\Pendulum-run4"
 }
