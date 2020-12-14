@@ -190,6 +190,8 @@ class DTRPO:
         if self.epoch%self.save_period==0:
             self.save_noise(u)
             self.save_proba(log_probs)
+            self.save_belief(obs)
+            self.save_hidden_state(obs)
         return -log_probs.mean()
 
     def save_proba(self, log_probs):
@@ -197,6 +199,28 @@ class DTRPO:
         ax.hist(torch.exp(log_probs).detach().numpy())
         plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_proba.png'))
         plt.close(fig)
+
+    def save_hidden_state(self,obs):
+        num_samples = min(obs.size(0),100)
+        with torch.no_grad():
+                obs = self.ac.enc(obs).detach()
+        obs = obs[:num_samples]
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+        ax.hist(obs.detach().numpy())
+        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
+        plt.close(fig)
+
+    def save_belief(self, obs):
+        num_samples = min(obs.size(0),100)
+        with torch.no_grad():
+                obs = self.ac.enc(obs).detach()
+        obs = obs[:num_samples]
+        samples = self.ac.enc.sample(self, num_samples=num_samples, cond_inputs=obs)
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+        ax.hist(samples.detach().numpy())
+        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
+        plt.close(fig)
+
 
     def save_noise(self, u):
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
