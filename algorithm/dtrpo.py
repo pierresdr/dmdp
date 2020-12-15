@@ -400,14 +400,14 @@ class DTRPO:
         # Prepare for interaction with environment
         start_time = dt.now()
         o, ep_ret, ep_len = self.env.reset(), 0, 0
-        if self.stoch_env:
+        if isinstance(self.env.action_space, Discrete):
             # Create one hot encoding of the actions contained in the state
             temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
                                    for i in range(self.act_dim*len(o[1]))]).float()                    
             
             o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
         else: 
-            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
 
         stop_belief_training = False
 
@@ -434,13 +434,13 @@ class DTRPO:
 
                 next_o, r, d, info = self.env.step(a.reshape(-1))
 
-                if self.stoch_env:
+                if isinstance(self.env.action_space, Discrete):
                     # Create one hot encoding of the actions contained in the state
                     temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
                                            for i in range(self.act_dim*len(next_o[1]))]).float()
                     next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
                 else: 
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
+                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1].astype(float)).reshape(-1)))
 
                 ep_ret += np.sum(r)
                 ep_len += 1
@@ -471,13 +471,13 @@ class DTRPO:
                         ep_lengths.append(ep_len)
                     o, ep_ret, ep_len = self.env.reset(), 0, 0
 
-                    if self.stoch_env:
+                    if isinstance(self.env.action_space, Discrete):
                         # Create one hot encoding of the actions contained in the state
                         temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
                                                for i in range(self.act_dim*len(o[1]))]).float()
                         o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
                     else: 
-                        o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+                        o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
 
                     episode += 1
 
@@ -584,12 +584,12 @@ class DTRPO:
             self.ac.pi.eval()
             o = self.env.reset()
 
-            if self.stoch_env:
+            if isinstance(self.env.action_space, Discrete):
                 temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
                                        for i in range(self.act_dim * len(o[1]))]).float()
                 o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
             else: 
-                o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+                o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
 
 
             # For each Step
@@ -599,12 +599,12 @@ class DTRPO:
                 a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
                 next_o, r, d, _ = self.env.step(a.reshape(-1))
 
-                if self.stoch_env:
+                if isinstance(self.env.action_space, Discrete):
                     temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
                                            for i in range(self.act_dim*len(next_o[1]))]).float()
                     next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
                 else:
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
+                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1].astype(float)).reshape(-1)))
 
 
                 o = next_o
