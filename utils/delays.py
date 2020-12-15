@@ -145,7 +145,7 @@ class DelayWrapper(Wrapper):
         # Create state and observation spaces
         self.state_space = self.observation_space
 
-        if self.action_space.__class__.__name__ == 'Discrete':
+        if isinstance(self.action_space, spaces.Discrete):
             size = self.action_space.n*self.delay.max
             stored_actions = spaces.Discrete(size)
         else:

@@ -197,12 +197,12 @@ class TRNActorCritic(nn.Module):
     def __init__(self, obs_dim, action_space, state_space, enc_dim=128, enc_heads=2, enc_ff=8, enc_l=1, dropout=0.0,
                  enc_rescaling=False, enc_causal=False, pi_hidden_sizes=(64, 64), v_hidden_sizes=(64, 64),
                  activation=nn.Tanh, hidden_dim=8, pred_to_pi=False, lstm=False, n_layers=3, hidden_size=16,
-                 n_blocks_maf=5, hidden_dim_maf=16, stoch_env=False, conv=False, only_last_belief=False):
+                 n_blocks_maf=5, hidden_dim_maf=16, use_belief=True, conv=False, only_last_belief=False):
         super().__init__()
 
         # Encoder Builder
         pi_in_dim = hidden_dim
-        if stoch_env:
+        if use_belief:
             self.enc = BeliefModuleStoch(state_space, action_space, encoder_dim=enc_dim, encoder_heads=enc_heads, encoder_ff_hid=enc_ff, 
                     encoder_layers=enc_l, hidden_size=hidden_size, num_layers=n_layers, hidden_dim=hidden_dim, 
                     n_blocks_maf=n_blocks_maf, hidden_dim_maf=hidden_dim_maf, dropout=dropout, 

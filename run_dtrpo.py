@@ -6,6 +6,7 @@ from utils import DTRPOCore as Core
 from algorithm.dtrpo import DTRPO
 from utils.various import *
 from utils.delays import DelayWrapper
+from utils.stochastic_wrapper import StochActionWrapper
 
 
 if __name__ == '__main__':
@@ -21,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_delay', default=50, type=int, help='Maximum delay of the environment.')
     parser.add_argument('--delay_proba', type=float, default=0.7, help='Probability of observation for the delay process.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the network to use belief module.')
+    parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')
@@ -93,15 +95,18 @@ if __name__ == '__main__':
 
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env + '-v0')
-    # Add the delay wrapper
-    env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba, max_delay=args.max_delay)
 
+    # Add stochasticity
     stoch_envs = ['PuddleWorld']
     if args.env in stoch_envs or args.force_stoch_env:
         stoch_MDP = True
+        env = StochActionWrapper(env, distrib='Gaussian', param=0.1)
     else: 
         stoch_MDP = False
 
+    # Add the delay wrapper
+    env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba, max_delay=args.max_delay)
+    
     # In the case of stochastic delays, the initial delay must be at least 1
     if args.stochastic_delays:
         args.delay = max(1, args.delay)
@@ -131,7 +136,7 @@ if __name__ == '__main__':
                       cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
                       lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
                       train_enc_iters=args.train_enc_iters, pretrain_epochs=args.pretrain_epochs,
-                      pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, stoch_env=stoch_MDP, 
+                      pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, use_belief=args.use_belief, 
                       size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred, 
                       epochs_belief_training=args.epochs_belief_training,)
 
@@ -158,6 +163,6 @@ if __name__ == '__main__':
         )
 
         dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                      save_dir=args.save_dir, stoch_env=stoch_MDP)
+                      save_dir=args.save_dir, use_belief=file_args['use_belief'])
 
         dtrpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps, epoch=args.epoch_load)

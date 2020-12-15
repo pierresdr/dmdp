@@ -24,8 +24,8 @@ class DTRPO:
                  epochs=50, gamma=0.99, delta=0.01, vf_lr=1e-3, train_v_iters=80, damping_coeff=0.1, cg_iters=10,
                  backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None,
                  enc_lr=0.001, maf_lr=0.001, train_enc_iters=1, pretrain_epochs=50, pretrain_steps=5000, 
-                 enc_loss='mse', stoch_env=False, size_pred_buf=4000, batch_size_pred=4000, train_continue=False,
-                 save_period=1, epochs_belief_training=50,):
+                 enc_loss='mse', size_pred_buf=4000, batch_size_pred=4000, train_continue=False,
+                 save_period=1, epochs_belief_training=50, use_belief=True,):
         """
         Trust Region Policy Optimization
         Schulman, John, et al. "Trust region policy optimization." International conference on machine learning. 2015.
@@ -72,7 +72,7 @@ class DTRPO:
                 training fires.
             pretrain_steps (int): Number of steps per epoch in the pretraining epochs.
             enc_loss (str): Name of the loss to use for the belief module (in the deterministic case).
-            stoch_env (bool): Whether the env is stochastic or not.
+            use_belief (bool): Whether the env is stochastic or not.
             size_pred_buf (int): Size of the belief module replay buffer.
             batch_size_pred (int): Size of the batch for belief gradient estimation.
             train_continue (bool): Whether to load a previous model and continue training.
@@ -89,10 +89,10 @@ class DTRPO:
         self.obs_dim = get_space_dim(self.env.observation_space)
         self.act_dim = get_space_dim(self.env.action_space)
         self.state_dim = get_space_dim(self.env.state_space)
-        self.stoch_env = stoch_env
+        self.use_belief = use_belief
 
         # Actor-Critic Module
-        self.ac = actor_critic(self.obs_dim, self.env.action_space, self.env.state_space, stoch_env=stoch_env, **ac_kwargs)
+        self.ac = actor_critic(self.obs_dim, self.env.action_space, self.env.state_space, use_belief=use_belief, **ac_kwargs)
 
         # Value Function Optimizer
         self.vf_lr = vf_lr
@@ -106,7 +106,7 @@ class DTRPO:
         self.train_enc_iters = train_enc_iters
         self.enc_lr = enc_lr
         self.maf_lr = maf_lr
-        if stoch_env:
+        if use_belief:
             self.update_enc = self.update_enc_stoch
             self.enc_optimizer = Adam(self.ac.enc.encoder.parameters(), lr=self.enc_lr)
             self.maf_optimizer = Adam(self.ac.enc.maf_proba.parameters(), lr=self.maf_lr)
@@ -156,7 +156,7 @@ class DTRPO:
         self.enc_losses = []
         self.v_losses = []
 
-        if self.stoch_env:
+        if self.use_belief:
             self.compute_loss_enc = self.compute_loss_enc_stoch
         else:
             self.compute_loss_enc = self.compute_loss_enc_deter
