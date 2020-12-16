@@ -269,6 +269,9 @@ class BeliefModuleStoch(nn.Module):
             log_jacob = log_jacob*importance
         return u[mask], (log_probs + log_jacob).sum(-1, keepdim=True)[mask]
 
+    def get_cond(self, extended_states):
+        return self.encoder(extended_states)
+
     def forward(self, extended_states):
         encoded_state = self.encoder(extended_states)
 

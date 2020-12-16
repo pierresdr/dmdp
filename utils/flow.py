@@ -96,6 +96,10 @@ class BatchNormFlow(nn.Module):
 
     def __init__(self, num_inputs, momentum=0.0, eps=1e-5):
         super(BatchNormFlow, self).__init__()
+        # self.batch_mean = None
+        # self.running_mean = None
+        # self.batch_var = None
+        # self.running_var = None
 
         self.log_gamma = nn.Parameter(torch.zeros(num_inputs))
         self.beta = nn.Parameter(torch.zeros(num_inputs))
@@ -164,7 +168,7 @@ class Reverse(nn.Module):
                 inputs.size(0), inputs.size(1), 1, device=inputs.device)
         else:
             return inputs[:, self.inv_perm], torch.zeros(
-                inputs.size(0), 1, device=inputs.device)
+                inputs.size(0), inputs.size(1), 1, device=inputs.device)
 
 
 
@@ -174,6 +178,7 @@ class MAF(nn.Sequential):
     
     def __init__(self, n_blocks, input_dim, hidden_dim, cond_dim):
         modules = []
+        self.num_inputs = None
         for _ in range(n_blocks):
             modules += [
                 MADE(input_dim, hidden_dim, cond_dim),
@@ -188,6 +193,8 @@ class MAF(nn.Sequential):
         #         nn.init.orthogonal_(module.weight)
         #         if hasattr(module, 'bias') and module.bias is not None:
         #             module.bias.data.fill_(0)
+
+    
 
     def forward(self, inputs, cond_inputs=None, mode='direct', logdets=None):
         """ Performs a forward or backward pass for flow modules.
@@ -219,8 +226,9 @@ class MAF(nn.Sequential):
         return (log_probs + log_jacob).sum(-1, keepdim=True)
 
     def sample(self, num_samples=None, noise=None, cond_inputs=None):
+        n_pred = 1 if cond_inputs is None else cond_inputs.size(1)
         if noise is None:
-            noise = torch.Tensor(num_samples, self.num_inputs).normal_()
+                noise = torch.Tensor(num_samples, n_pred, self.num_inputs).normal_()
         device = next(self.parameters()).device
         noise = noise.to(device)
         if cond_inputs is not None:
