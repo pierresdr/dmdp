@@ -228,7 +228,7 @@ class SARSA:
 
                 # self.env.render()
 
-                ep_ret += r.item()
+                ep_ret += r.sum()
                 step += 1
 
                 if d:
