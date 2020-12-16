@@ -21,8 +21,9 @@ if __name__ == '__main__':
     parser.add_argument('--stochastic_delays', action='store_true', help='Use stochastic delays.')
     parser.add_argument('--max_delay', default=50, type=int, help='Maximum delay of the environment.')
     parser.add_argument('--delay_proba', type=float, default=0.7, help='Probability of observation for the delay process.')
-    parser.add_argument('--force_stoch_env', action='store_true', help='Force the network to use belief module.')
+    parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
+    parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the aciton, for Gaussian, param is the std.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     stoch_envs = ['PuddleWorld']
     if args.env in stoch_envs or args.force_stoch_env:
         stoch_MDP = True
-        env = StochActionWrapper(env, distrib='Gaussian', param=0.1)
+        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
     else: 
         stoch_MDP = False
 
