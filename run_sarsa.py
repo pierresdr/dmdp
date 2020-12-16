@@ -46,7 +46,10 @@ if __name__ == '__main__':
     # Environment Initialization
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env + '-v0')
-    env._max_episode_steps = args.max_ep_len
+    if args.mode == 'train':
+        env._max_episode_steps = args.max_ep_len
+    else:
+        env._max_episode_steps = args.test_steps
 
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)

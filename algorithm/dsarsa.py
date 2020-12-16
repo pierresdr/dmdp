@@ -77,10 +77,10 @@ class DSARSA:
         return a[0][0]
 
     def train(self):
-        ep_rewards = []
-        ep_lengths = []
         start_time = dt.now()
         for epoch in range(self.epochs):
+            ep_rewards = []
+            ep_lengths = []
             self.epoch = epoch + 1
             s = self.env.reset()
             disc_steps = self.delay

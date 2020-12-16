@@ -96,7 +96,10 @@ if __name__ == '__main__':
 
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env + '-v0')
-    env._max_episode_steps = args.max_ep_len
+    if args.mode == 'train':
+        env._max_episode_steps = args.max_ep_len
+    else:
+        env._max_episode_steps = args.test_steps
 
     # Add stochasticity
     stoch_envs = ['PuddleWorld']
