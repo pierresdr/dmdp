@@ -392,99 +392,100 @@ class DTRPO:
             self.vf_optimizer.step()
         return loss_v.detach().item()
 
+    def format_o(self, o):
+        if isinstance(self.env.action_space, Discrete):
+            # Create one hot encoding of the actions contained in the state
+            temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
+                                   for i in range(self.act_dim * len(o[1]))]).float()
+
+            o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
+        else:
+            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
+        return o
+
     def train(self):
         # Load previous training final data in order to continue from there
         if self.train_continue:
             self.load_session()
 
-        # Prepare for interaction with environment
+        # Prepare for interaction with environment for the first Episode:
+        # Start recording timings, reset the environment to get s_0
         start_time = dt.now()
         o, ep_ret, ep_len = self.env.reset(), 0, 0
-        if isinstance(self.env.action_space, Discrete):
-            # Create one hot encoding of the actions contained in the state
-            temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                   for i in range(self.act_dim*len(o[1]))]).float()                    
-            
-            o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-        else: 
-            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
+        o = self.format_o(o)
 
+        # Set the Variable that will stop Belief Module Training to False
         stop_belief_training = False
 
         # ---- TRAINING LOOP ----
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
 
-
+            # If Pre-Training of Belief Module is (still) active:
             if self.epoch < self.pretrain_epochs:
                 pretrain = True
                 max_epoch_steps = self.pretrain_steps
             else:
                 pretrain = False
                 max_epoch_steps = self.steps_per_epoch
+
+            # If Belief Module completed its training:
             if self.epoch > self.epochs_belief_training:
                 stop_belief_training = True
+
+            # Reset Episodes variables
             ep_rewards = []
             ep_lengths = []
             episode = 0
 
             for t in range(max_epoch_steps):
-
+                # Select a new action
                 a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
 
+                # Execute the action
                 next_o, r, d, info = self.env.step(a.reshape(-1))
-
-                if isinstance(self.env.action_space, Discrete):
-                    # Create one hot encoding of the actions contained in the state
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
-                                           for i in range(self.act_dim*len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else: 
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1].astype(float)).reshape(-1)))
-
+                next_o = self.format_o(next_o)
                 ep_ret += np.sum(r)
                 ep_len += 1
 
-                # Save and Log
+                # Save the visited transition in to the Buffer
                 self.buf.store(o, a, np.sum(r), v, not d, info, logp, episode, pretrain=pretrain)
                 o = next_o
 
+                # Is the episode terminated and why?
                 timeout = ep_len == self.max_ep_len
                 terminal = d or timeout
                 epoch_ended = t == self.steps_per_epoch - 1
 
                 if terminal or epoch_ended:
-                    # If Epoch ended before Trajectory could end
+                    # If Epoch ended before Episode could end
                     if epoch_ended and not terminal:
                         prGreen('\tWarning: trajectory cut off by epoch at %d steps.' % ep_len)
-                    # If trajectory didn't reach terminal state, bootstrap value target
+                    # If Episode didn't reach terminal state, bootstrap value target of the reached state
                     if timeout or epoch_ended:
                         _, v, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
                     # If the Trajectory ended by its own, set State Value to 0
                     else:
                         v = 0
-                    # Let the Buffer adjust itself when a Trajectory has ended
+                    # Let the Buffer adjust itself when an Episode has ended
                     self.buf.finish_path(v)
                     if terminal:
-                        # Only print EpRet and EpLen if trajectory finished
+                        # Only print EpRet and EpLen if Episode finished (otherwise they're not indicative)
                         ep_rewards.append(ep_ret)
                         ep_lengths.append(ep_len)
+
+                    # Prepare for interaction with environment for the next episode:
+                    # Start recording timings, reset the environment to get s_0
                     o, ep_ret, ep_len = self.env.reset(), 0, 0
+                    o = self.format_o(o)
 
-                    if isinstance(self.env.action_space, Discrete):
-                        # Create one hot encoding of the actions contained in the state
-                        temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                               for i in range(self.act_dim*len(o[1]))]).float()
-                        o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-                    else: 
-                        o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
-
+                    # Update Episode counting variable
                     episode += 1
-
 
             # Perform TRPO update at the end of the Epoch
             self.update(pretrain=pretrain, stop_belief_training=stop_belief_training)
 
+            # Record Timings
             self.elapsed_time = dt.now() - start_time
 
             # Gather Epoch results and print them
@@ -493,8 +494,12 @@ class DTRPO:
             self.avg_length.append(np.average(ep_lengths))
             self.timings.append(self.elapsed_time)
             self.print_update()
-            if epoch%self.save_period==0:
+
+            # Save Epoch Results each "save_period" epochs
+            if epoch % self.save_period == 0:
                 self.save_session()
+
+            # Plot all the data of this Epoch
             self.save_results()
 
     def print_update(self):
@@ -574,49 +579,38 @@ class DTRPO:
         plt.close(fig)
 
     def test(self, test_episodes=10, max_steps=250, epoch=None):
+        # Load the Model to train:
         self.load_session(epoch)
-        episode = 0
 
+        # Set Episodes variables
+        episode = 0
         reward = []
 
         # ---- TESTING LOOP ----
         while episode < test_episodes:
+            # Policy Evaluation mode
             self.ac.pi.eval()
+
+            # Reset the Environment for this Episode
             o = self.env.reset()
-
-            if isinstance(self.env.action_space, Discrete):
-                temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
-                                       for i in range(self.act_dim * len(o[1]))]).float()
-                o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-            else: 
-                o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
-
+            o = self.format_o(o)
 
             # For each Step
             step = 0
             ep_ret = 0.0
             while step < max_steps:
+                # Select an Action
                 a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+                # Execute the Action
                 next_o, r, d, _ = self.env.step(a.reshape(-1))
-
-                if isinstance(self.env.action_space, Discrete):
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
-                                           for i in range(self.act_dim*len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else:
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1].astype(float)).reshape(-1)))
-
-
-                o = next_o
-
+                o = self.format_o(next_o)
                 self.env.render()
-
                 ep_ret += np.sum(r)
                 step += 1
-
                 if d:
                     break
 
+            # Update Episode counting variable
             episode += 1
 
             # Print Episode Result
@@ -628,9 +622,10 @@ class DTRPO:
             reward.append(ep_ret)
 
         # Save test results
+        save_path = None
         if epoch is not None: 
             save_path = os.path.join(self.save_dir, 'test_result_'+str(epoch)+'.pt')
-        elif self.stochastic_delays:
+        elif self.env.stochastic_delays:
             os.path.join(self.save_dir, 'test_result_' + str(self.env.delay.p) + '.pt')
         else:
             save_path = os.path.join(self.save_dir, 'test_result.pt')
