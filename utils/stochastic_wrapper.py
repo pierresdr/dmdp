@@ -1,6 +1,3 @@
-
-
-
 import numpy as np
 import random as rnd
 from gym import Wrapper, spaces, ActionWrapper
@@ -56,11 +53,12 @@ from torch.distributions.normal import Normal
 #         return output, reward_output, done, (n_obs, hidden_output)
 
 class Gaussian:
-    def __init__(self, std=1):
+    def __init__(self, std=1.0):
         self.std = std
     
     def sample(self):
         return np.random.normal(scale=self.std)
+
 
 class StochActionWrapper(ActionWrapper):
     def __init__(self, env, distrib='Gaussian', param=0.1):
@@ -69,20 +67,16 @@ class StochActionWrapper(ActionWrapper):
         if distrib == 'Gaussian':
             self.stoch_perturbation = Gaussian(std=param)
 
-
     def action(self, action):
         action = action + self.stoch_perturbation.sample()
         return action
 
 
-
 class RandomActionWrapper(ActionWrapper):
 
     def __init__(self, env, epsilon=0.1):
-
-       super(RandomActionWrapper, self).__init__(env)
-
-       self.epsilon = epsilon
+        super(RandomActionWrapper, self).__init__(env)
+        self.epsilon = epsilon
 
     def action(self, action):
 
