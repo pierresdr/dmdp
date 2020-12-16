@@ -62,7 +62,6 @@ class Gaussian:
 
 class StochActionWrapper(ActionWrapper):
     def __init__(self, env, distrib='Gaussian', param=0.1):
-
         super(StochActionWrapper, self).__init__(env)
         if distrib == 'Gaussian':
             self.stoch_perturbation = Gaussian(std=param)
