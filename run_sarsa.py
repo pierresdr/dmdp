@@ -82,6 +82,6 @@ if __name__ == '__main__':
         with open(load_parameters) as text_file:
             file_args = json.load(text_file)
 
-        agent = sarsa(env, delay=args.delay, save_dir=args.save_dir)
+        agent = sarsa(env, delay=args.delay, s_space=args.s_space, a_space=args.a_space, save_dir=args.save_dir)
 
         agent.test(test_episodes=args.test_episodes, max_steps=args.test_steps)

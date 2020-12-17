@@ -161,7 +161,6 @@ class SARSA:
             os.mkdir(self.save_dir)
 
         save_path = os.path.join(self.save_dir, 'model.pt')
-        print(np.argmin(self.Q))
         ckpt = {'q_table': self.Q,
                 'avg_reward': self.avg_reward,
                 'std_reward': self.std_reward,
@@ -179,7 +178,6 @@ class SARSA:
         ckpt = torch.load(load_path)
 
         self.Q = ckpt['q_table']
-        print(np.argmin(self.Q))
         self.actions = ckpt['actions']
         self.actions_index = ckpt['actions_index']
         self.avg_reward = ckpt['avg_reward']
@@ -228,7 +226,7 @@ class SARSA:
                 next_s, r, d, _ = self.env.step([self.actions[a]])
                 s = next_s
 
-                # self.env.render()
+                self.env.render()
 
                 ep_ret += r.sum()
                 step += 1
