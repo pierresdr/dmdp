@@ -105,7 +105,7 @@ def get_output_folder(parent_dir, env_name):
     os.makedirs(parent_dir, exist_ok=True)
 
     parent_dir = os.path.join(parent_dir, env_name)
-    parent_dir = parent_dir + '-' + datetime.datetime.now().strftime("%y-%m-%d_%H_%M")
+    parent_dir = parent_dir + '-' + datetime.datetime.now().strftime("%y-%m-%d_%H_%M_%f")
     os.makedirs(parent_dir, exist_ok=True)
     return parent_dir
 
