@@ -2,6 +2,8 @@ import warnings
 import numpy as np
 import torch.distributions
 import utils.TRPOCore as Core
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.optim import Adam
 from utils.TRPOBuffer import GAEBuffer
@@ -57,7 +59,6 @@ class TRPO:
                 close to 1.)
             max_ep_len (int): Maximum length of trajectory / episode / rollout.
             save_dir (str): Path to the folder where results are saved.
-            stoch_env (bool): Whether the env is stochastic or not.
         """
 
         # Seed

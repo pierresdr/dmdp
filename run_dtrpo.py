@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='Pendulum', type=str)
+    parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
     parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action, for Gaussian, param is the std.')
+    parser.add_argument('--stoch_mdp_distrib', default='Gaussian', type=str, help='Type of distribution of the action noise.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')
@@ -95,19 +96,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ---- ENV INITIALIZATION ----
-    env = gym.make(args.env + '-v0')
+    env = gym.make(args.env)
     if args.mode == 'train':
         env._max_episode_steps = args.max_ep_len
     else:
         env._max_episode_steps = args.test_steps
 
-    # Add stochasticity
-    stoch_envs = ['PuddleWorld']
-    if args.env in stoch_envs or args.force_stoch_env:
-        stoch_MDP = True
+    # Add stochasticity wrapper
+    if args.force_stoch_env:
         env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
-    else: 
-        stoch_MDP = False
 
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba, max_delay=args.max_delay)

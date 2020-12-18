@@ -1,0 +1,17 @@
+name;epochs_trpo;time_to_200;best_perf;unstable;Unlearn
+Pendulum-run1;1000;0;400;TRUE;
+Pendulum-run2;1000;0;800;TRUE;
+Pendulum-run3;1000;200;200;FALSE;
+Pendulum-run4;1000;700;200;TRUE;
+Pendulum-run6;1000;300;200;FALSE;FALSE
+Pendulum-run7;1000;300;200;FALSE;FALSE
+Pendulum-run8;1000;300;200;FALSE;FALSE
+Pendulum-run13;1000;200;200;TRUE;TRUE
+Pendulum-run14;1000;300;200;TRUE;TRUE
+Pendulum-run15;1000;0;400;FALSE;TRUE
+Pendulum-run16;1000;0;500;FALSE;FALSE
+Pendulum-run17;1000;700;200;FALSE;TRUE
+Pendulum-run18;1000;0;600;TRUE;TRUE
+Pendulum-run24;1000;400;200;FALSE;FALSE
+Pendulum-run25;600;350;200;FALSE;FALSE
+Pendulum-run27;750;450;200;TRUE;TRUE

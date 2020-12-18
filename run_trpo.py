@@ -1,11 +1,12 @@
 import json, argparse
-import gym, gym_puddle
+import gym#, gym_puddle
 from importlib import import_module
 from utils import TRPOCore as Core
 from algorithm.trpo import TRPO
 import torch.nn as nn
 from utils.various import *
 from utils.delays import DelayWrapper
+from utils.stochastic_wrapper import StochActionWrapper
 
 
 if __name__ == '__main__':
@@ -13,12 +14,14 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='Pendulum', type=str)
+    parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
+    parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
+    parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action, for Gaussian, param is the std.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the network to use belief module.')
     parser.add_argument('--memoryless', action='store_true', help='Force Memoryless learning regardless of delay.')
 
@@ -59,15 +62,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ---- ENV INITIALIZATION ----
-    env = gym.make(args.env + '-v0')
+    env = gym.make(args.env)
+
+    # Add stochasticity wrapper
+    if args.force_stoch_env:
+        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
+
+
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
 
-    stoch_envs = ['PuddleWorld']
-    if args.env in stoch_envs or args.force_stoch_env:
-        stoch_MDP = True
-    else: 
-        stoch_MDP = False
 
     # ---- TRAIN MODE ---- 
     if args.mode == 'train':
