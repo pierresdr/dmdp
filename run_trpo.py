@@ -22,7 +22,6 @@ if __name__ == '__main__':
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action, for Gaussian, param is the std.')
-    parser.add_argument('--force_stoch_env', action='store_true', help='Force the network to use belief module.')
     parser.add_argument('--memoryless', action='store_true', help='Force Memoryless learning regardless of delay.')
 
     # Train Specific Arguments
@@ -68,10 +67,8 @@ if __name__ == '__main__':
     if args.force_stoch_env:
         env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
 
-
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
-
 
     # ---- TRAIN MODE ---- 
     if args.mode == 'train':
@@ -93,7 +90,7 @@ if __name__ == '__main__':
                     steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
                     vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
                     cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, stoch_env=stoch_MDP,
+                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir,
                     memoryless=args.memoryless)
 
         trpo.train()
@@ -114,6 +111,6 @@ if __name__ == '__main__':
         )
 
         trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                    save_dir=args.save_dir, stoch_env=stoch_MDP, memoryless=args.memoryless)
+                    save_dir=args.save_dir, memoryless=args.memoryless)
 
         trpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
