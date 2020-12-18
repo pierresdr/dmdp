@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
     parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action, for Gaussian, param is the std.')
+    parser.add_argument('--stoch_mdp_distrib', default='Gaussian', type=str, help='Type of distribution of the action noise.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')

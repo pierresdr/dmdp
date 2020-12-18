@@ -56,8 +56,19 @@ class Gaussian:
     def __init__(self, std=1.0):
         self.std = std
     
-    def sample(self):
-        return np.random.normal(scale=self.std)
+    def sample(self, action):
+        return action + np.random.normal(scale=self.std)
+
+class Uniform:
+    def __init__(self, env_action_space, epsilon=0.1):
+        self.epsilon = epsilon
+        self.env_action_space = env_action_space
+    
+    def sample(self, action):
+        if rnd.random() < self.epsilon:
+            return self.env_action_space.sample()
+
+        return action
 
 
 class StochActionWrapper(ActionWrapper):
@@ -65,9 +76,11 @@ class StochActionWrapper(ActionWrapper):
         super(StochActionWrapper, self).__init__(env)
         if distrib == 'Gaussian':
             self.stoch_perturbation = Gaussian(std=param)
+        elif distrib == 'Uniform':
+            self.stoch_perturbation = Uniform(epsilon=param, env_action_space=self.env.action_space)
 
     def action(self, action):
-        action = action + self.stoch_perturbation.sample()
+        action = self.stoch_perturbation.sample(action)
         return action
 
 
