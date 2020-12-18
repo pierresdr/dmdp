@@ -73,8 +73,9 @@ class Uniform:
 
 
 class StochActionWrapper(ActionWrapper):
-    def __init__(self, env, distrib='Gaussian', param=0.1):
+    def __init__(self, env, distrib='Gaussian', param=0.1, seed=0):
         super(StochActionWrapper, self).__init__(env)
+        rnd.seed(seed)
         if distrib == 'Gaussian':
             self.stoch_perturbation = Gaussian(std=param)
         elif distrib == 'Uniform':

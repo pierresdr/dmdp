@@ -100,6 +100,7 @@ if __name__ == '__main__':
 
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env)
+    env.seed(args.seed)
     if args.mode == 'train':
         env._max_episode_steps = args.max_ep_len
     else:

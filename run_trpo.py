@@ -62,10 +62,11 @@ if __name__ == '__main__':
 
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env)
+    env.seed(args.seed)
 
     # Add stochasticity wrapper
     if args.force_stoch_env:
-        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
+        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param, seed=args.seed)
 
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
