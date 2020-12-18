@@ -20,13 +20,14 @@ if __name__ == '__main__':
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the network to use belief module.')
+    parser.add_argument('--memoryless', action='store_true', help='Force Memoryless learning regardless of delay.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')
-    parser.add_argument('--epochs', type=int, default=200, help='Number of Epochs of Training.')
+    parser.add_argument('--epochs', type=int, default=500, help='Number of Epochs of Training.')
     parser.add_argument('--max_ep_len', type=int, default=250, help='Max Number of Steps per Episode')
     parser.add_argument('--gamma', type=float, default=0.99, help='Discount Factor.')
-    parser.add_argument('--delta', type=float, default=0.1, help='TRPO Max KL Divergence.')
+    parser.add_argument('--delta', type=float, default=0.001, help='TRPO Max KL Divergence.')
 
     # Test Specific Arguments
     parser.add_argument('--test_episodes', type=int, default=10, help='Number of Test Episodes.')
@@ -68,7 +69,6 @@ if __name__ == '__main__':
     else: 
         stoch_MDP = False
 
-    
     # ---- TRAIN MODE ---- 
     if args.mode == 'train':
         # Create output folder and save training parameters
@@ -89,7 +89,8 @@ if __name__ == '__main__':
                     steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
                     vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
                     cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, stoch_env=stoch_MDP,)
+                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, stoch_env=stoch_MDP,
+                    memoryless=args.memoryless)
 
         trpo.train()
 
@@ -109,6 +110,6 @@ if __name__ == '__main__':
         )
 
         trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                    save_dir=args.save_dir, stoch_env=stoch_MDP)
+                    save_dir=args.save_dir, stoch_env=stoch_MDP, memoryless=args.memoryless)
 
         trpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps)

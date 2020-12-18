@@ -17,7 +17,7 @@ class TRPO:
     def __init__(self, env, actor_critic=Core.MLPActorCritic, ac_kwargs=dict(), seed=0, steps_per_epoch=4000,
                  epochs=50, gamma=0.99, delta=0.01, vf_lr=1e-3, train_v_iters=80, damping_coeff=0.1, cg_iters=10,
                  backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None,
-                 stoch_env=False):
+                 stoch_env=False, memoryless=False):
         """
         Trust Region Policy Optimization
         Schulman, John, et al. "Trust region policy optimization." International conference on machine learning. 2015.
@@ -65,15 +65,22 @@ class TRPO:
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
 
-        # Environment
+        # Environment Initialization
         self.env = env
+        # 1. Memoryless Agent: Aware only of the last observed state.
+        self.memoryless = memoryless
+        if self.memoryless:
+            self.observation_space = self.env.state_space
+        else:
+            self.observation_space = self.env.observation_space
+        # 2. Set the rest of the parameters
         self.env.action_space.seed(seed)
-        self.obs_dim = get_space_dim(self.env.observation_space)
+        self.obs_dim = get_space_dim(self.observation_space)
         self.act_dim = get_space_dim(self.env.action_space)
         self.stoch_env = stoch_env
 
         # Actor-Critic Module
-        self.ac = actor_critic(self.env.observation_space, self.env.action_space, self.env.state_space, **ac_kwargs)
+        self.ac = actor_critic(self.observation_space, self.env.action_space, self.env.state_space, **ac_kwargs)
 
         # Value Function Optimizer
         self.vf_lr = vf_lr
@@ -206,16 +213,22 @@ class TRPO:
             self.vf_optimizer.step()
         return loss_v.detach().item()
 
-    def train(self):
-        # Prepare for interaction with environment
-        start_time = dt.now()
-        o, ep_ret, ep_len = self.env.reset(), 0, 0
+    def format_o(self, o):
         if self.stoch_env:
             temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
                                    for i in range(self.act_dim*len(o[1]))]).float()
             o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-        else: 
+        elif self.memoryless:
+            o = torch.tensor(o[0])
+        else:
             o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+        return o
+
+    def train(self):
+        # Prepare for interaction with environment
+        start_time = dt.now()
+        o, ep_ret, ep_len = self.env.reset(), 0, 0
+        o = self.format_o(o)
 
         # Main loop: collect experience in env and update/log each epoch
         for epoch in range(1, self.epochs + 1):
@@ -228,13 +241,7 @@ class TRPO:
                 a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32))
 
                 next_o, r, d, _ = self.env.step(a)
-
-                if self.stoch_env:
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i//self.act_dim]
-                                           for i in range(self.act_dim*len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else: 
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
+                next_o = self.format_o(next_o)
 
                 ep_ret += np.sum(r)
                 ep_len += 1
@@ -270,12 +277,7 @@ class TRPO:
                         ep_rewards.append(ep_ret)
                         ep_lengths.append(ep_len)
                     o, ep_ret, ep_len = self.env.reset(), 0, 0
-                    if self.stoch_env:
-                        temp_o = torch.tensor([i % self.act_dim == o[1][i//self.act_dim]
-                                               for i in range(self.act_dim*len(o[1]))]).float()
-                        o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-                    else: 
-                        o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+                    o = self.format_o(o)
                     episode += 1
 
             # Perform TRPO update at the end of the Epoch
@@ -360,13 +362,7 @@ class TRPO:
         while episode < test_episodes:
             self.ac.pi.eval()
             o = self.env.reset()
-
-            if self.stoch_env:
-                temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
-                                       for i in range(self.act_dim * len(o[1]))]).float()
-                o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
-            else: 
-                o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+            o = self.format_o(o)
 
             # For each Step
             step = 0
@@ -374,18 +370,8 @@ class TRPO:
             while step < max_steps:
                 a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32))
                 next_o, r, d, _ = self.env.step(a)
-
-                if self.stoch_env:
-                    temp_o = torch.tensor([i % self.act_dim == next_o[1][i // self.act_dim]
-                                           for i in range(self.act_dim * len(next_o[1]))]).float()
-                    next_o = torch.cat((torch.tensor(next_o[0]), temp_o.reshape(-1)))
-                else:
-                    next_o = torch.cat((torch.tensor(next_o[0]), torch.tensor(next_o[1]).reshape(-1)))
-
-                o = next_o
-
+                o = self.format_o(next_o)
                 self.env.render()
-
                 ep_ret += np.sum(r)
                 step += 1
 
