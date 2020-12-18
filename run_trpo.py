@@ -1,5 +1,5 @@
 import json, argparse
-import gym, gym_puddle
+import gym#, gym_puddle
 from importlib import import_module
 from utils import TRPOCore as Core
 from algorithm.trpo import TRPO
@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='Pendulum', type=str)
+    parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ---- ENV INITIALIZATION ----
-    env = gym.make(args.env + '-v0')
+    env = gym.make(args.env)
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
 
