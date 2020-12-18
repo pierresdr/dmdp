@@ -68,10 +68,11 @@ class SARSA:
         return int(s)
 
     def train(self):
-        ep_rewards = []
-        ep_lengths = []
         start_time = dt.now()
         for epoch in range(self.epochs):
+            ep_rewards = []
+            ep_lengths = []
+
             self.epoch = epoch + 1
             s = self.env.reset()
             a = self.sample_a(s, e_greedy=True)
@@ -160,7 +161,6 @@ class SARSA:
             os.mkdir(self.save_dir)
 
         save_path = os.path.join(self.save_dir, 'model.pt')
-
         ckpt = {'q_table': self.Q,
                 'avg_reward': self.avg_reward,
                 'std_reward': self.std_reward,
@@ -226,9 +226,9 @@ class SARSA:
                 next_s, r, d, _ = self.env.step([self.actions[a]])
                 s = next_s
 
-                # self.env.render()
+                self.env.render()
 
-                ep_ret += r.item()
+                ep_ret += r.sum()
                 step += 1
 
                 if d:

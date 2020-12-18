@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--delay_proba', type=float, default=0.7, help='Probability of observation for the delay process.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
-    parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the aciton, for Gaussian, param is the std.')
+    parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action, for Gaussian, param is the std.')
 
     # Train Specific Arguments
     parser.add_argument('--steps_per_epoch', type=int, default=5000, help='Number of Steps per Epoch.')
@@ -96,6 +96,10 @@ if __name__ == '__main__':
 
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env + '-v0')
+    if args.mode == 'train':
+        env._max_episode_steps = args.max_ep_len
+    else:
+        env._max_episode_steps = args.test_steps
 
     # Add stochasticity
     stoch_envs = ['PuddleWorld']

@@ -46,6 +46,11 @@ if __name__ == '__main__':
     # Environment Initialization
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env + '-v0')
+    if args.mode == 'train':
+        env._max_episode_steps = args.max_ep_len
+    else:
+        env._max_episode_steps = args.test_steps
+
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
 
@@ -77,6 +82,6 @@ if __name__ == '__main__':
         with open(load_parameters) as text_file:
             file_args = json.load(text_file)
 
-        agent = sarsa(env, delay=args.delay, save_dir=args.save_dir)
+        agent = sarsa(env, delay=args.delay, s_space=args.s_space, a_space=args.a_space, save_dir=args.save_dir)
 
         agent.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
