@@ -2,6 +2,7 @@ import warnings
 import numpy as np
 import torch.distributions
 import utils.TRPOCore as Core
+import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.optim import Adam
