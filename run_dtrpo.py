@@ -101,13 +101,9 @@ if __name__ == '__main__':
     else:
         env._max_episode_steps = args.test_steps
 
-    # Add stochasticity
-    stoch_envs = ['PuddleWorld']
-    if args.env in stoch_envs or args.force_stoch_env:
-        stoch_MDP = True
+    # Add stochasticity wrapper
+    if args.force_stoch_env:
         env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param)
-    else: 
-        stoch_MDP = False
 
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba, max_delay=args.max_delay)
