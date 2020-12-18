@@ -59,6 +59,7 @@ class Gaussian:
     def sample(self, action):
         return action + np.random.normal(scale=self.std)
 
+
 class Uniform:
     def __init__(self, env_action_space, epsilon=0.1):
         self.epsilon = epsilon
