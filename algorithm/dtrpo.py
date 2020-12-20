@@ -187,7 +187,7 @@ class DTRPO:
         """
         obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
         u, log_probs = self.ac.enc.log_probs(obs, states, mask)
-        if self.epoch%self.save_period==0:
+        if self.epoch % self.save_period == 0:
             self.save_noise(u)
             self.save_proba(log_probs)
             # self.save_belief(obs)
@@ -200,14 +200,14 @@ class DTRPO:
         plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_proba.png'))
         plt.close(fig)
 
-    def save_hidden_state(self,obs):
-        num_samples = min(obs.size(0),100)
+    def save_hidden_state(self, obs):
+        num_samples = min(obs.size(0), 100)
         with torch.no_grad():
-                obs = self.ac.enc(obs).detach()
+            obs = self.ac.enc(obs).detach()
         obs = obs[:num_samples]
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         ax.hist(obs.detach().numpy())
-        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_hidden_state.png'))
+        plt.savefig(os.path.join(self.save_dir, str(self.epoch)+ '_hidden_state.png'))
         plt.close(fig)
 
     def save_belief(self, obs):
@@ -217,22 +217,21 @@ class DTRPO:
         cond = cond[:num_samples]
         samples = self.ac.enc.maf_proba.sample(num_samples=num_samples, cond_inputs=cond)
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
-        ax.hist(samples[:,-1,:].detach().numpy())
-        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_belief.png'))
+        ax.hist(samples[:, -1, :].detach().numpy())
+        plt.savefig(os.path.join(self.save_dir ,str(self.epoch)+'_belief.png'))
         plt.close(fig)
-
 
     def save_noise(self, u):
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
-        u = torch.cat((u, torch.normal(torch.zeros(u.size(0))).reshape(-1,1)),1)
-        ax.hist(u.detach().numpy(),range=(-4,4))
-        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_noise.png'))
+        u = torch.cat((u, torch.normal(torch.zeros(u.size(0))).reshape(-1, 1)), 1)
+        ax.hist(u.detach().numpy(), range=(-4, 4))
+        plt.savefig(os.path.join(self.save_dir, str(self.epoch)+ '_noise.png'))
         plt.close(fig)
 
     def save_obs_density(self, obs):
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         ax.hist(obs.detach().numpy())
-        plt.savefig(os.path.join(self.save_dir,str(self.epoch)+'_encoded_state.png'))
+        plt.savefig(os.path.join(self.save_dir, str(self.epoch)+ '_encoded_state.png'))
         plt.close(fig)
 
     def compute_kl(self, data, old_pi):

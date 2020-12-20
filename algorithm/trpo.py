@@ -18,7 +18,7 @@ class TRPO:
 
     def __init__(self, env, actor_critic=Core.MLPActorCritic, ac_kwargs=dict(), seed=0, steps_per_epoch=4000,
                  epochs=50, gamma=0.99, delta=0.01, vf_lr=1e-3, train_v_iters=80, damping_coeff=0.1, cg_iters=10,
-                 backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None,
+                 backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None, save_period=1,
                  stoch_env=False, memoryless=False):
         """
         Trust Region Policy Optimization
@@ -110,6 +110,7 @@ class TRPO:
 
         # Results and Save Variables
         self.save_dir = save_dir
+        self.save_period = save_period
         self.epoch = 0
         self.elapsed_time = timedelta(0)
         self.avg_reward = []
@@ -291,7 +292,11 @@ class TRPO:
             self.avg_length.append(np.average(ep_lengths))
             self.timings.append(self.elapsed_time)
             self.print_update()
-            self.save_session()
+
+            # Save Epoch Results each "save_period" epochs
+            if epoch % self.save_period == 0:
+                self.save_session()
+
             self.save_results()
 
     def print_update(self):

@@ -58,6 +58,7 @@ if __name__ == '__main__':
 
     # Folder Management Arguments
     parser.add_argument('--save_dir', default='./output/trpo', type=str, help='Output folder for the Trained Model')
+    parser.add_argument('--save_period', type=int, default=1, help='Save models learned parameters every save_period.')
     args = parser.parse_args()
 
     # ---- ENV INITIALIZATION ----
@@ -91,7 +92,7 @@ if __name__ == '__main__':
                     steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
                     vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
                     cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir,
+                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
                     memoryless=args.memoryless)
 
         trpo.train()
