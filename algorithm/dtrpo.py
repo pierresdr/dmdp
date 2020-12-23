@@ -368,13 +368,13 @@ class DTRPO:
             data = self.buf.get_pred_data()
             loss_enc = self.compute_loss_enc(data)
             # kl_reg = compute_kl_reg_for_belief(self, data, old_pi)
-            if i == self.train_enc_iters-1:
-                loss_enc.backward(retain_graph=True)
-                self.enc_optimizer.step()
-                self.maf_optimizer.step()
-            else:
-                loss_enc.backward()
-                self.enc_optimizer.step()
+            # if i == self.train_enc_iters-1:
+            loss_enc.backward(retain_graph=True)
+            self.enc_optimizer.step()
+            self.maf_optimizer.step()
+            # else:
+            #     loss_enc.backward()
+            #     self.enc_optimizer.step()
                 # self.maf_optimizer.step()
         self.ac.enc.eval()
         # for p in self.ac.enc.maf_proba.parameters():
