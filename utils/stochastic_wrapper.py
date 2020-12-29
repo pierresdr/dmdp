@@ -72,6 +72,37 @@ class Uniform:
         return action
 
 
+class LogNormal:
+    def __init__(self, mean=0.0, sigma=1.0, shift=-2.0):
+        self.mean = mean
+        self.sigma = sigma
+        self.shift = shift
+
+    def sample(self, action):
+        return action + np.random.lognormal(mean=self.mean, sigma=self.sigma) - self.shift
+
+
+class Triangular:
+    def __init__(self, left=-2.0, mode=0.0, right=2.0):
+        self.left = left
+        self.mode = mode
+        self.right = right
+
+    def sample(self, action):
+        return action + np.random.triangular(left=self.left, mode=self.mode, right=self.right)
+
+
+class Beta:
+    def __init__(self, alpha=0.5, beta=0.5, shift=-0.5, scale=4.0):
+        self.alpha = alpha
+        self.beta = beta
+        self.shift = shift
+        self.scale = scale
+
+    def sample(self, action):
+        return action + (np.random.beta(a=self.alpha, b=self.beta) - self.shift) * self.scale
+
+
 class StochActionWrapper(ActionWrapper):
     def __init__(self, env, distrib='Gaussian', param=0.1, seed=0):
         super(StochActionWrapper, self).__init__(env)
@@ -80,6 +111,16 @@ class StochActionWrapper(ActionWrapper):
             self.stoch_perturbation = Gaussian(std=param)
         elif distrib == 'Uniform':
             self.stoch_perturbation = Uniform(epsilon=param, env_action_space=self.env.action_space)
+        elif distrib == 'LogNormal':
+            self.stoch_perturbation = LogNormal(sigma=param)
+        elif distrib == 'Triangular':
+            self.stoch_perturbation = Triangular(mode=param)
+        elif distrib == 'Quadratic':
+            assert param > 1
+            self.stoch_perturbation = Beta(alpha=param, beta=param)
+        elif distrib == 'U-Shaped':
+            assert 0 < param < 1
+            self.stoch_perturbation = Beta(alpha=param, beta=param)
 
     def action(self, action):
         action = self.stoch_perturbation.sample(action)
