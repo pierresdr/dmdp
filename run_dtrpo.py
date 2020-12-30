@@ -24,9 +24,15 @@ if __name__ == '__main__':
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
     parser.add_argument('--use_belief', action='store_true', help='Force the network to use belief module.')
     parser.add_argument('--stoch_mdp_param', type=float, default=1, help='Depending on the stochasticity of the action:'
-                                                                         + '- Gaussian: param is the std\n'
-                                                                         + '- Uniform: Probability of sampling from\n')
-    parser.add_argument('--stoch_mdp_distrib', default='Gaussian', type=str, choices=['Gaussian', 'Uniform'],
+                                                                         + '- Gaussian: STD of the Distribution\n'
+                                                                         + '- Uniform: Probability of sampling from\n'
+                                                                         + '- LogNormal: STD of the Distribution\n'
+                                                                         + '- Triangular: Mode of the "triangle"\n'
+                                                                         + '- Quadratic: A and B parameters of Beta\n'
+                                                                         + '- U-Shaped: A and B parameters of Beta')
+    parser.add_argument('--stoch_mdp_distrib', default='Gaussian', type=str, choices=['Gaussian', 'Uniform',
+                                                                                      'LogNormal', 'Triangular',
+                                                                                      'Quadratic', 'U-Shaped'],
                         help='Type of distribution of the action noise.')
 
     # Train Specific Arguments
