@@ -64,8 +64,8 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='Pendulum', type=str)
 
     parser.add_argument('--delay', type=int, default=30, help='Number of Delay Steps for the Environment.')
-    parser.add_argument('--seed', type=int, default=0, help='Seed for Reproducibility purposes.')
-    parser.add_argument('--multiple_runs', action='store_true', help='If True, launch range(seed) runs.')
+    parser.add_argument('--seeds', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
 
@@ -93,8 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', default='./output/sarsa', type=str, help='Output folder for the Trained Model')
     args = parser.parse_args()
 
-    if args.multiple_runs:
-        for i in range(args.seed):
-            launch_sarsa(args, i)
-    else:
-        launch_sarsa(args, args.seed)
+    for i in args.seeds:
+        print('Launching Seed: ' + str(i))
+        args.curr_seed = i
+        launch_sarsa(args, i)

@@ -75,8 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
-    parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
-    parser.add_argument('--multiple_runs', action='store_true', help='If True, launch range(seed) runs.')
+    parser.add_argument('--seed', '-s', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
@@ -120,8 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_period', type=int, default=1, help='Save models learned parameters every save_period.')
     args = parser.parse_args()
 
-    if args.multiple_runs:
-        for i in range(args.seed):
-            launch_trpo(args, i)
-    else:
-        launch_trpo(args, args.seed)
+    for i in args.seeds:
+        print('Launching Seed: ' + str(i))
+        args.curr_seed = i
+        launch_trpo(args, i)
