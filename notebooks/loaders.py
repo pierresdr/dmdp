@@ -3,21 +3,29 @@ import torch
 import os
 
 
-def load_train_avg(path):
-    ckpt = torch.load(path + '/model.pt')
+def load_train_avg(path, epoch=0):
+    if epoch != 0:
+        model = '/model_' + str(epoch) + '.pt'
+    else:
+        model = '/model.pt'
+    ckpt = torch.load(path + model)
     return torch.as_tensor(ckpt['avg_reward'])
 
 
-def load_train_std(path):
-    ckpt = torch.load(path + '/model.pt')
+def load_train_std(path, epoch=0):
+    if epoch != 0:
+        model = '/model_' + str(epoch) + '.pt'
+    else:
+        model = '/model.pt'
+    ckpt = torch.load(path + model)
     return torch.as_tensor(ckpt['std_reward'])
 
 
-def stats_train(method=None, source=None, test_type=None):
+def stats_train(method=None, source=None, test_type=None, epoch=0):
     path = '../output/' + method + '/Pendulum-' + source + '/Results-' + test_type
     subfolders = [f.path for f in os.scandir(path) if f.is_dir()]
-    rewards = torch.cat(([load_train_avg(folder).unsqueeze(0) for folder in subfolders]), dim=0)
-    stds = torch.cat(([load_train_std(folder).unsqueeze(0) for folder in subfolders]), dim=0)
+    rewards = torch.cat(([load_train_avg(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
+    stds = torch.cat(([load_train_std(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
     mean = torch.mean(rewards, dim=0)
     std = torch.mean(stds, dim=0)
     return mean, std
