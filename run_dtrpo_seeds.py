@@ -12,7 +12,9 @@ from utils.stochastic_wrapper import StochActionWrapper
 
 def launch_trpo(args, seed):
     env = gym.make(args.env)
+    args.seed = seed
     env.seed(seed)
+    
     if args.mode == 'train':
         env._max_episode_steps = args.max_ep_len
     else:
