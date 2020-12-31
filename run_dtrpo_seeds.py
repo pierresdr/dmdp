@@ -9,7 +9,6 @@ from utils.delays import DelayWrapper
 from utils.stochastic_wrapper import StochActionWrapper
 
 
-
 def launch_trpo(args, seed):
     env = gym.make(args.env)
     args.seed = seed
