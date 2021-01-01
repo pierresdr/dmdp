@@ -73,7 +73,7 @@ class Uniform:
 
 
 class LogNormal:
-    def __init__(self, mean=0.0, sigma=1.0, shift=-2.0):
+    def __init__(self, mean=0.0, sigma=1.0, shift=-1.0):
         self.mean = mean
         self.sigma = sigma
         self.shift = shift
@@ -93,7 +93,7 @@ class Triangular:
 
 
 class Beta:
-    def __init__(self, alpha=0.5, beta=0.5, shift=-0.5, scale=4.0):
+    def __init__(self, alpha=0.5, beta=0.5, shift=-0.5, scale=2.0):
         self.alpha = alpha
         self.beta = beta
         self.shift = shift
