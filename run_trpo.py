@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
-    parser.add_argument('--seed', '-s', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--seeds', '-s', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
