@@ -9,6 +9,64 @@ from utils.delays import DelayWrapper
 from utils.stochastic_wrapper import StochActionWrapper
 
 
+def launch_trpo(args, seed):
+    # ---- ENV INITIALIZATION ----
+    env = gym.make(args.env)
+    env.seed(seed)
+
+    # Add stochasticity wrapper
+    if args.force_stoch_env:
+        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param, seed=seed)
+
+    # Add the delay wrapper
+    env = DelayWrapper(env, delay=args.delay)
+
+    # ---- TRAIN MODE ----
+    if args.mode == 'train':
+        # Create output folder and save training parameters
+        args.save_dir = args.save_dir + str(args.delay)
+        args.save_dir = get_output_folder(os.path.join(args.save_dir, args.env + '-Results'), args.env)
+        with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
+            json.dump(args.__dict__, text_file, indent=2)
+
+        # Policy module parameters
+        ac_kwargs = dict(
+            pi_hidden_sizes=[args.pi_hid] * args.pi_l,
+            v_hidden_sizes=[args.v_hid] * args.v_l,
+            conv=args.convolutions,
+            activation=eval(args.pi_activation)
+        )
+
+        trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=seed,
+                    steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
+                    vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
+                    cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
+                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
+                    memoryless=args.memoryless)
+
+        trpo.train()
+
+    # ---- TEST MODE ---- #
+    elif args.mode == 'test':
+        # Recover parameters of the trained model
+        args.save_model = next(filter(lambda x: '.pt' in x, os.listdir(args.save_dir)))
+        model_path = os.path.join(args.save_dir, args.save_model)
+        load_parameters = os.path.join(args.save_dir, 'model_parameters.txt')
+        with open(load_parameters) as text_file:
+            file_args = json.load(text_file)
+
+        # Policy module parameters
+        ac_kwargs = dict(
+            pi_hidden_sizes=[file_args['pi_hid']] * file_args['pi_l'],
+            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l']
+        )
+
+        trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=seed,
+                    save_dir=args.save_dir, memoryless=args.memoryless)
+
+        trpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trust Region Policy Optimization (PyTorch)')
 
@@ -17,7 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--env', default='Pendulum-v0', type=str)
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
-    parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--seeds', '-s', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')
     parser.add_argument('--train_render', action='store_true', help='Whether render the Env during training or not.')
     parser.add_argument('--train_render_ep', type=int, default=1, help='Which episodes render the env during training.')
     parser.add_argument('--force_stoch_env', action='store_true', help='Force the env to be stochastic.')
@@ -61,58 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_period', type=int, default=1, help='Save models learned parameters every save_period.')
     args = parser.parse_args()
 
-    # ---- ENV INITIALIZATION ----
-    env = gym.make(args.env)
-    env.seed(args.seed)
-
-    # Add stochasticity wrapper
-    if args.force_stoch_env:
-        env = StochActionWrapper(env, distrib='Gaussian', param=args.stoch_mdp_param, seed=args.seed)
-
-    # Add the delay wrapper
-    env = DelayWrapper(env, delay=args.delay)
-
-    # ---- TRAIN MODE ---- 
-    if args.mode == 'train':
-        # Create output folder and save training parameters
-        args.save_dir = args.save_dir+str(args.delay)
-        args.save_dir = get_output_folder(os.path.join(args.save_dir, args.env+'-Results'), args.env)
-        with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
-            json.dump(args.__dict__, text_file, indent=2)
-
-        # Policy module parameters 
-        ac_kwargs = dict(
-            pi_hidden_sizes=[args.pi_hid] * args.pi_l,
-            v_hidden_sizes=[args.v_hid] * args.v_l,
-            conv=args.convolutions,
-            activation=eval(args.pi_activation)
-        )
-
-        trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                    steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
-                    vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
-                    cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
-                    memoryless=args.memoryless)
-
-        trpo.train()
-
-    # ---- TEST MODE ---- #
-    elif args.mode == 'test':
-        # Recover parameters of the trained model
-        args.save_model = next(filter(lambda x: '.pt' in x, os.listdir(args.save_dir)))
-        model_path = os.path.join(args.save_dir, args.save_model)
-        load_parameters = os.path.join(args.save_dir, 'model_parameters.txt')
-        with open(load_parameters) as text_file:
-            file_args = json.load(text_file)
-
-        # Policy module parameters 
-        ac_kwargs = dict(
-            pi_hidden_sizes=[file_args['pi_hid']] * file_args['pi_l'],
-            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l']
-        )
-
-        trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                    save_dir=args.save_dir, memoryless=args.memoryless)
-
-        trpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
+    for i in args.seeds:
+        print('Launching Seed: ' + str(i))
+        args.curr_seed = i
+        launch_trpo(args, i)
