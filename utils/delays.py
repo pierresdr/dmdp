@@ -226,7 +226,7 @@ class DelayWrapper(Wrapper):
         self._reward_stock = np.delete(self._reward_stock, range(n_obs))
 
         # Shaping the output
-        output = (self.extended_obs[0], np.array(self.extended_obs[1:], dtype=object))
+        output = (self.extended_obs[0], np.array(self.extended_obs[1:]))
 
         return output, reward_output, done, (n_obs, hidden_output)
 
