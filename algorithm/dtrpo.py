@@ -186,7 +186,7 @@ class DTRPO:
         """Compute the loss of the belief stochastic for deterministic env.
         """
         obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
-        u, log_probs = self.ac.enc.log_probs(obs, states, mask)
+        u, log_probs = self.ac.enc.log_probs(obs, states, torch.from_numpy(mask))
         if self.epoch % self.save_period == 0:
             self.save_noise(u)
             self.save_proba(log_probs)
