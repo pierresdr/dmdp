@@ -223,7 +223,7 @@ class TRPO:
         elif self.memoryless:
             o = torch.tensor(o[0])
         else:
-            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1]).reshape(-1)))
+            o = torch.cat((torch.tensor(o[0], dtype=torch.float32), torch.tensor(o[1]).reshape(-1)))
         return o
 
     def train(self):
