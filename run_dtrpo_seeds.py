@@ -65,6 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
     parser.add_argument('--env', default='Pendulum-v0', type=str)
 
+    parser.add_argument('--first_seed', type=int, default=0, help='Number of seeds to launch.')
     parser.add_argument('--n_seeds', '-s', type=int, default=1, help='Number of seeds to launch.')
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--stochastic_delays', action='store_true', help='Use stochastic delays.')
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', default='./output/dtrpo', type=str, help='Output folder for the Trained Model')
     args = parser.parse_args()
 
-    for i in range(args.n_seeds):
+    for i in range(args.first_seed, args.first_seed+args.n_seeds):
         launch_trpo(args, i)
     
 
