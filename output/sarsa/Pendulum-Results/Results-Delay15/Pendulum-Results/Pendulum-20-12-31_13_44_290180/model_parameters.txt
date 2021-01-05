@@ -1,0 +1,28 @@
+{
+  "mode": "train",
+  "env": "Pendulum",
+  "delay": 15,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "curr_seed": 0,
+  "train_render": false,
+  "train_render_ep": 1,
+  "steps_per_epoch": 5000,
+  "epochs": 2000,
+  "max_ep_len": 250,
+  "test_episodes": 10,
+  "test_steps": 250,
+  "dsarsa": false,
+  "gamma": 0.99,
+  "lam": 0.9,
+  "lr": 0.1,
+  "e": 0.2,
+  "s_space": 15,
+  "a_space": 3,
+  "save_dir": "./output/sarsa/delay15\\Pendulum-Results\\Pendulum-20-12-31_13_44_290180"
+}
