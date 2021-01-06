@@ -248,10 +248,6 @@ class TRPO:
                 ep_ret += np.sum(r)
                 ep_len += 1
 
-                if np.isnan(a):
-                    warnings.warn('NAN Action detected.')
-                    return
-
                 # save and log
                 self.buf.store(o, a, np.sum(r), v, logp, episode)
 

@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
-    parser.add_argument('--env', default='Pendulum-v0', type=str)
+    parser.add_argument('--env', default='Pendulum-v0', type=str, choices=['Pendulum-v0', 'LunarLanderContinuous-v2'])
 
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--seeds', '-s', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
