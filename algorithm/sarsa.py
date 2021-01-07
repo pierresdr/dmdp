@@ -226,7 +226,7 @@ class SARSA:
                 next_s, r, d, _ = self.env.step([self.actions[a]])
                 s = next_s
 
-                self.env.render()
+                # self.env.render()
 
                 ep_ret += r.sum()
                 step += 1
@@ -246,6 +246,9 @@ class SARSA:
 
         # Save test results
         save_path = os.path.join(self.save_dir, 'test_result.pt')
-        torch.save(reward, save_path)
+        ckpt = {'seed': self.seed,
+                'reward': reward
+                }
+        torch.save(ckpt, save_path)
 
         self.env.close()

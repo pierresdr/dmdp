@@ -13,6 +13,7 @@ def launch_sarsa(args, seed):
     env = gym.make(args.env + '-v0')
     env.seed(seed)
 
+    # Set Environment episode Max Length
     if args.mode == 'train':
         env._max_episode_steps = args.max_ep_len
     else:
@@ -21,13 +22,13 @@ def launch_sarsa(args, seed):
     # Add the delay wrapper
     env = DelayWrapper(env, delay=args.delay)
 
-    # Method Initialization
+    # Method Initialization + Folder Initialization
     if args.dsarsa:
         sarsa = DSARSA
-        args.save_dir = './output/dsarsa/delay' + str(args.delay)
+        if args.mode == 'train':
+            args.save_dir = './output/dsarsa'
     else:
         sarsa = SARSA
-        args.save_dir = './output/sarsa/delay' + str(args.delay)
 
     # ---- TRAIN MODE ---- #
     if args.mode == 'train':
@@ -50,7 +51,7 @@ def launch_sarsa(args, seed):
         with open(load_parameters) as text_file:
             file_args = json.load(text_file)
 
-        agent = sarsa(env, delay=args.delay, s_space=file_args.s_space, a_space=file_args.a_space, save_dir=args.save_dir)
+        agent = sarsa(env, delay=args.delay, s_space=file_args['s_space'], a_space=file_args['a_space'], save_dir=args.save_dir)
 
         agent.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
 
