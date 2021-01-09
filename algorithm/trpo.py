@@ -319,8 +319,13 @@ class TRPO:
 
         torch.save(ckpt, save_path)
 
-    def load_session(self):
-        load_path = os.path.join(self.save_dir, 'model_272.pt')
+    def load_session(self, test_epoch=0):
+        if test_epoch != 0:
+            model = 'model_' + str(test_epoch) + '.pt'
+        else:
+            model = 'model.pt'
+
+        load_path = os.path.join(self.save_dir, model)
         ckpt = torch.load(load_path)
 
         self.ac.pi.load_state_dict(ckpt['policy_state_dict'])
@@ -355,8 +360,8 @@ class TRPO:
         plt.savefig(os.path.join(self.save_dir, filename + '.png'))
         plt.close(fig)
 
-    def test(self, test_episodes=10, max_steps=250):
-        self.load_session()
+    def test(self, test_epoch=2000, test_episodes=10, max_steps=250):
+        self.load_session(test_epoch)
         episode = 0
 
         reward = []
@@ -373,7 +378,7 @@ class TRPO:
                 a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32))
                 next_o, r, d, _ = self.env.step(a)
                 o = self.format_o(next_o)
-                self.env.render()
+                # self.env.render()
                 ep_ret += np.sum(r)
                 step += 1
 
@@ -392,6 +397,10 @@ class TRPO:
 
         # Save test results
         save_path = os.path.join(self.save_dir, 'test_result.pt')
-        torch.save(reward, save_path)
+        ckpt = {
+            'seed': self.seed,
+            'reward': reward
+        }
+        torch.save(ckpt, save_path)
 
         self.env.close()

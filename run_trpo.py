@@ -58,13 +58,15 @@ def launch_trpo(args, seed):
         # Policy module parameters
         ac_kwargs = dict(
             pi_hidden_sizes=[file_args['pi_hid']] * file_args['pi_l'],
-            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l']
+            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l'],
+            conv=file_args['convolutions'],
+            activation=eval(file_args['pi_activation'])
         )
 
         trpo = TRPO(env, actor_critic=Core.MLPActorCritic, ac_kwargs=ac_kwargs, seed=seed,
-                    save_dir=args.save_dir, memoryless=args.memoryless)
+                    save_dir=args.save_dir, memoryless=file_args['memoryless'])
 
-        trpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps)
+        trpo.test(test_epoch=args.test_epoch, test_episodes=args.test_episodes, max_steps=args.test_steps)
 
 
 if __name__ == '__main__':
@@ -93,6 +95,7 @@ if __name__ == '__main__':
     # Test Specific Arguments
     parser.add_argument('--test_episodes', type=int, default=10, help='Number of Test Episodes.')
     parser.add_argument('--test_steps', type=int, default=250, help='Number of Steps per Test Episode.')
+    parser.add_argument('--test_epoch', type=int, default=0, help='Epoch to be loaded for the Test.')
 
     # Value Function Specific Arguments
     parser.add_argument('--v_hid', type=int, default=64, help='Number of Neurons in each Hidden Layers.')
