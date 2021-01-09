@@ -29,6 +29,8 @@ def launch_sarsa(args, seed):
             args.save_dir = './output/dsarsa'
     else:
         sarsa = SARSA
+        if args.mode == 'train':
+            args.save_dir = './output/sarsa'
 
     # ---- TRAIN MODE ---- #
     if args.mode == 'train':
