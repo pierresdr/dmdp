@@ -9,6 +9,92 @@ from utils.delays import DelayWrapper
 from utils.stochastic_wrapper import StochActionWrapper
 
 
+def launch_dtrpo(args, seed):
+    # ---- ENV INITIALIZATION ----
+    env = gym.make(args.env)
+    env.seed(seed)
+    if args.mode == 'train':
+        env._max_episode_steps = args.max_ep_len
+    else:
+        env._max_episode_steps = args.test_steps
+
+    # Add stochasticity wrapper
+    if args.force_stoch_env:
+        env = StochActionWrapper(env, distrib=args.stoch_mdp_distrib, param=args.stoch_mdp_param)
+
+    # Add the delay wrapper
+    env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba,
+                       max_delay=args.max_delay)
+
+    # In the case of stochastic delays, the initial delay must be at least 1
+    if args.stochastic_delays:
+        args.delay = max(1, args.delay)
+
+    # ---- TRAIN MODE ----
+    if args.mode == 'train':
+        # Folder Initialization (DTRPO or L2TRPO)
+        if args.use_belief:
+            args.save_dir = './output/dtrpo'
+        else:
+            args.save_dir = './output/l2trpo'
+
+        # Create output folder and save training parameters
+        args.save_dir = get_output_folder(os.path.join(args.save_dir, args.env + '-Results'), args.env)
+        with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
+            json.dump(args.__dict__, text_file, indent=2)
+
+        # Policy and belief module parameters
+        ac_kwargs = dict(
+            pi_hidden_sizes=[args.pi_hid] * args.pi_l,
+            v_hidden_sizes=[args.v_hid] * args.v_l,
+            enc_dim=args.enc_dim, enc_heads=args.enc_heads, enc_ff=args.enc_ff, enc_l=args.enc_l,
+            enc_rescaling=args.enc_rescaling, enc_causal=args.enc_causal, pred_to_pi=args.enc_pred_to_pi,
+            hidden_dim=args.hidden_dim, n_blocks_maf=args.n_blocks_maf, hidden_dim_maf=args.hidden_dim_maf,
+            lstm=args.lstm, n_layers=args.n_layers, hidden_size=args.hidden_size, conv=args.convolutions,
+            only_last_belief=args.only_last_belief,
+            activation=eval(args.pi_activation)
+        )
+
+        dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=seed,
+                      steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
+                      vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
+                      cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters,
+                      backtrack_coeff=args.backtrack_coeff,
+                      lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
+                      train_enc_iters=args.train_enc_iters, pretrain_epochs=args.pretrain_epochs,
+                      pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, use_belief=args.use_belief,
+                      size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred,
+                      epochs_belief_training=args.epochs_belief_training, )
+
+        dtrpo.train()
+
+    # ---- TEST MODE ---- #
+    elif args.mode == 'test':
+        # Recover parameters of the trained model
+        args.save_model = next(filter(lambda x: '.pt' in x, os.listdir(args.save_dir)))
+        # model_path = os.path.join(args.save_dir, args.save_model)
+        load_parameters = os.path.join(args.save_dir, 'model_parameters.txt')
+        with open(load_parameters) as text_file:
+            file_args = json.load(text_file)
+
+        # Policy and belief module parameters
+        ac_kwargs = dict(
+            pi_hidden_sizes=[file_args['pi_hid']] * file_args['pi_l'],
+            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l'],
+            enc_dim=file_args['enc_dim'], enc_heads=file_args['enc_heads'], enc_ff=file_args['enc_ff'],
+            enc_l=file_args['enc_l'], enc_rescaling=file_args['enc_rescaling'], enc_causal=file_args['enc_causal'],
+            pred_to_pi=file_args['enc_pred_to_pi'], hidden_dim=file_args['hidden_dim'],
+            n_blocks_maf=file_args['n_blocks_maf'],
+            hidden_dim_maf=file_args['hidden_dim_maf'], lstm=file_args['lstm'], n_layers=file_args['n_layers'],
+            hidden_size=file_args['hidden_size']
+        )
+
+        dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=seed,
+                      save_dir=args.save_dir, use_belief=file_args['use_belief'])
+
+        dtrpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps, epoch=args.epoch_load)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trust Region Policy Optimization (PyTorch)')
 
@@ -16,7 +102,8 @@ if __name__ == '__main__':
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
     parser.add_argument('--env', default='Pendulum-v0', type=str)
 
-    parser.add_argument('--seed', '-s', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--seeds', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
+    parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')
     parser.add_argument('--delay', type=int, default=3, help='Number of Delay Steps for the Environment.')
     parser.add_argument('--stochastic_delays', action='store_true', help='Use stochastic delays.')
     parser.add_argument('--max_delay', default=50, type=int, help='Maximum delay of the environment.')
@@ -104,77 +191,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', default='./output/dtrpo', type=str, help='Output folder for the Trained Model')
     args = parser.parse_args()
 
-    # ---- ENV INITIALIZATION ----
-    env = gym.make(args.env)
-    env.seed(args.seed)
-    if args.mode == 'train':
-        env._max_episode_steps = args.max_ep_len
-    else:
-        env._max_episode_steps = args.test_steps
-
-    # Add stochasticity wrapper
-    if args.force_stoch_env:
-        env = StochActionWrapper(env, distrib=args.stoch_mdp_distrib, param=args.stoch_mdp_param)
-
-    # Add the delay wrapper
-    env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba, max_delay=args.max_delay)
-    
-    # In the case of stochastic delays, the initial delay must be at least 1
-    if args.stochastic_delays:
-        args.delay = max(1, args.delay)
-
-    # ---- TRAIN MODE ---- 
-    if args.mode == 'train':
-        # Create output folder and save training parameters
-        args.save_dir = get_output_folder(os.path.join(args.save_dir, args.env+'-Results'), args.env)
-        with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
-            json.dump(args.__dict__, text_file, indent=2)
-
-        # Policy and belief module parameters 
-        ac_kwargs = dict(
-            pi_hidden_sizes=[args.pi_hid] * args.pi_l,
-            v_hidden_sizes=[args.v_hid] * args.v_l,
-            enc_dim=args.enc_dim,  enc_heads=args.enc_heads, enc_ff=args.enc_ff, enc_l=args.enc_l,
-            enc_rescaling=args.enc_rescaling, enc_causal=args.enc_causal, pred_to_pi=args.enc_pred_to_pi,
-            hidden_dim=args.hidden_dim, n_blocks_maf=args.n_blocks_maf, hidden_dim_maf=args.hidden_dim_maf,
-            lstm=args.lstm, n_layers=args.n_layers, hidden_size=args.hidden_size, conv=args.convolutions,
-            only_last_belief=args.only_last_belief,
-            activation=eval(args.pi_activation)
-        )
-
-        dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                      steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
-                      vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
-                      cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                      lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
-                      train_enc_iters=args.train_enc_iters, pretrain_epochs=args.pretrain_epochs,
-                      pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, use_belief=args.use_belief, 
-                      size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred, 
-                      epochs_belief_training=args.epochs_belief_training,)
-
-        dtrpo.train()
-
-    # ---- TEST MODE ---- #
-    elif args.mode == 'test':
-        # Recover parameters of the trained model
-        args.save_model = next(filter(lambda x: '.pt' in x, os.listdir(args.save_dir)))
-        # model_path = os.path.join(args.save_dir, args.save_model)
-        load_parameters = os.path.join(args.save_dir, 'model_parameters.txt')
-        with open(load_parameters) as text_file:
-            file_args = json.load(text_file)
-
-        # Policy and belief module parameters 
-        ac_kwargs = dict(
-            pi_hidden_sizes=[file_args['pi_hid']] * file_args['pi_l'],
-            v_hidden_sizes=[file_args['v_hid']] * file_args['v_l'],
-            enc_dim=file_args['enc_dim'], enc_heads=file_args['enc_heads'], enc_ff=file_args['enc_ff'],
-            enc_l=file_args['enc_l'], enc_rescaling=file_args['enc_rescaling'], enc_causal=file_args['enc_causal'],
-            pred_to_pi=file_args['enc_pred_to_pi'], hidden_dim=file_args['hidden_dim'], n_blocks_maf=file_args['n_blocks_maf'], 
-            hidden_dim_maf=file_args['hidden_dim_maf'], lstm=file_args['lstm'], n_layers=file_args['n_layers'],
-            hidden_size=file_args['hidden_size']
-        )
-
-        dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=args.seed,
-                      save_dir=args.save_dir, use_belief=file_args['use_belief'])
-
-        dtrpo.test(test_episodes=args.test_episodes, max_steps=args.test_steps, epoch=args.epoch_load)
+    for i in args.seeds:
+        print('Launching Seed: ' + str(i))
+        args.curr_seed = i
+        launch_dtrpo(args, i)
