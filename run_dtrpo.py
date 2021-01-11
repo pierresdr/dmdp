@@ -116,10 +116,11 @@ if __name__ == '__main__':
                                                                          + '- LogNormal: STD of the Distribution\n'
                                                                          + '- Triangular: Mode of the "triangle"\n'
                                                                          + '- Quadratic: A and B parameters of Beta\n'
-                                                                         + '- U-Shaped: A and B parameters of Beta')
+                                                                         + '- U-Shaped: A and B parameters of Beta\n'
+                                                                         + '- Beta: A=8, B=2. No parameters.')
     parser.add_argument('--stoch_mdp_distrib', default='Gaussian', type=str, choices=['Gaussian', 'Uniform',
                                                                                       'LogNormal', 'Triangular',
-                                                                                      'Quadratic', 'U-Shaped'],
+                                                                                      'Quadratic', 'U-Shaped', 'Beta'],
                         help='Type of distribution of the action noise.')
 
     # Train Specific Arguments

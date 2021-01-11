@@ -121,6 +121,8 @@ class StochActionWrapper(ActionWrapper):
         elif distrib == 'U-Shaped':
             assert 0 < param < 1
             self.stoch_perturbation = Beta(alpha=param, beta=param)
+        elif distrib == 'Beta':
+            self.stoch_perturbation = Beta(alpha=8, beta=2, shift=-0.5, scale=2.0)
 
     def action(self, action):
         action = self.stoch_perturbation.sample(action)
