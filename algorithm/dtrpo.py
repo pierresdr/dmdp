@@ -603,7 +603,7 @@ class DTRPO:
                 # Execute the Action
                 next_o, r, d, _ = self.env.step(a.reshape(-1))
                 o = self.format_o(next_o)
-                self.env.render()
+                #self.env.render()
                 ep_ret += np.sum(r)
                 step += 1
                 if d:
@@ -628,6 +628,11 @@ class DTRPO:
             os.path.join(self.save_dir, 'test_result_' + str(self.env.delay.p) + '.pt')
         else:
             save_path = os.path.join(self.save_dir, 'test_result.pt')
-        torch.save(reward, save_path)
+
+        ckpt = {
+            'seed': self.seed,
+            'reward': reward
+        }
+        torch.save(ckpt, save_path)
 
         self.env.close()

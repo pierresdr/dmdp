@@ -86,7 +86,9 @@ def launch_dtrpo(args, seed):
             pred_to_pi=file_args['enc_pred_to_pi'], hidden_dim=file_args['hidden_dim'],
             n_blocks_maf=file_args['n_blocks_maf'],
             hidden_dim_maf=file_args['hidden_dim_maf'], lstm=file_args['lstm'], n_layers=file_args['n_layers'],
-            hidden_size=file_args['hidden_size']
+            hidden_size=file_args['hidden_size'], conv=file_args['convolutions'],
+            only_last_belief=file_args['only_last_belief'],
+            activation=eval(file_args['pi_activation'])
         )
 
         dtrpo = DTRPO(env, actor_critic=Core.TRNActorCritic, ac_kwargs=ac_kwargs, seed=seed,
