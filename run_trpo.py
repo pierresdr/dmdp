@@ -123,7 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_period', type=int, default=1, help='Save models learned parameters every save_period.')
     args = parser.parse_args()
 
-    for i in args.seeds:
+    for i in list(args.seeds):
         print('Launching Seed: ' + str(i))
         args.curr_seed = i
         launch_trpo(args, i)

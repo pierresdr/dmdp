@@ -194,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', default='./output/dtrpo', type=str, help='Output folder for the Trained Model')
     args = parser.parse_args()
 
-    for i in args.seeds:
+    for i in list(args.seeds):
         print('Launching Seed: ' + str(i))
         args.curr_seed = i
         launch_dtrpo(args, i)
