@@ -93,11 +93,11 @@ class TRPO:
         prLightPurple('Number of parameters: \t pi: %d, \t v: %d\n' % var_counts)
 
         # Set up experience buffer
-        self.gamma = gamma
+        self.gamma = gammac
         self.lam = lam
         self.steps_per_epoch = steps_per_epoch
         # action is set to 1, ok for all tested envs, otherwise problem with discrete action spaces size
-        self.buf = GAEBuffer(self.obs_dim, 1, self.steps_per_epoch, self.gamma, self.lam)
+        self.buf = GAEBuffer(self.obs_dim, self.env.action_space.shape, self.steps_per_epoch, self.gamma, self.lam)
 
         # Other TRPO Parameters
         self.epochs = epochs

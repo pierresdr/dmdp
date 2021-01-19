@@ -127,11 +127,11 @@ class DTRPO:
         self.lam = lam
         self.steps_per_epoch = steps_per_epoch
         if self.env.stochastic_delays:
-            self.buf = GAEBufferStoch(self.obs_dim, self.state_dim, 1, self.act_dim, size_pred_buf, batch_size_pred,
+            self.buf = GAEBufferStoch(self.obs_dim, self.state_dim, self.env.action_space.shape, self.act_dim, size_pred_buf, batch_size_pred,
                                       self.steps_per_epoch, self.gamma, self.lam)
         else:
             # action is set to 1, ok for all tested envs, otherwise problem with discrete action spaces size
-            self.buf = GAEBufferDeter(self.obs_dim, self.state_dim, 1, self.act_dim, size_pred_buf, batch_size_pred,
+            self.buf = GAEBufferDeter(self.obs_dim, self.state_dim, self.env.action_space.shape, self.act_dim, size_pred_buf, batch_size_pred,
                                       self.steps_per_epoch, self.gamma, self.lam)
 
         # Other TRPO Parameters
