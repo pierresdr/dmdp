@@ -2,11 +2,11 @@ import os
 import numpy as np
 
 os.system("conda activate Thesis")
-delays = [3, 5, 10, 15]
+delays = [3, 5, 10, 15, 20]
 
 # DTRPO Deterministic Delay Pendulum Tests
 for delay in delays:
-    save_dir = "./output/dtrpo/Pendulum-Results/Results-Delay" + str(delay)
+    save_dir = "./output/l2trpo/Pendulum-Results-BIG/Results-Delay" + str(delay) + '-BIG'
     subfolders = [f.path for f in os.scandir(save_dir) if f.is_dir()]
     runs = len(subfolders)
     run = 0
