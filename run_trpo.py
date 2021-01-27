@@ -24,9 +24,8 @@ def launch_trpo(args, seed):
     # ---- TRAIN MODE ----
     if args.mode == 'train':
         # Create output folder and save training parameters
-        args.save_dir = args.save_dir + str(args.delay)
-        args.save_dir = get_output_folder(os.path.join(args.save_dir, args.env + '-Results'), args.env)
-        with open(os.path.join(args.save_dir, 'model_parameters.txt'), 'w') as text_file:
+        save_dir = get_output_folder(args.save_dir, args.env)
+        with open(os.path.join(save_dir, 'model_parameters.txt'), 'w') as text_file:
             json.dump(args.__dict__, text_file, indent=2)
 
         # Policy module parameters
@@ -41,7 +40,7 @@ def launch_trpo(args, seed):
                     steps_per_epoch=args.steps_per_epoch, epochs=args.epochs, gamma=args.gamma, delta=args.delta,
                     vf_lr=args.vf_lr, train_v_iters=args.v_iters, damping_coeff=args.damping_coeff,
                     cg_iters=args.cg_iters, backtrack_iters=args.backtrack_iters, backtrack_coeff=args.backtrack_coeff,
-                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=args.save_dir, save_period=args.save_period,
+                    lam=args.lam, max_ep_len=args.max_ep_len, save_dir=save_dir, save_period=args.save_period,
                     memoryless=args.memoryless)
 
         trpo.train()
