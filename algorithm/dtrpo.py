@@ -577,7 +577,7 @@ class DTRPO:
         plt.savefig(os.path.join(self.save_dir, filename + '.png'))
         plt.close(fig)
 
-    def test(self, test_episodes=10, max_steps=250, epoch=None):
+    def test(self, test_episodes=10, max_steps=250, epoch=None, test=None):
         # Load the Model to train:
         self.load_session(epoch)
 
@@ -622,8 +622,10 @@ class DTRPO:
 
         # Save test results
         save_path = None
-        if epoch is not None: 
-            save_path = os.path.join(self.save_dir, 'test_result_'+str(epoch)+'.pt')
+        if test is not None:
+            save_path = os.path.join(self.save_dir, 'test_result_' + test + '.pt')
+        elif epoch is not None:
+            save_path = os.path.join(self.save_dir, 'test_result_' + str(epoch) + '.pt')
         elif self.env.stochastic_delays:
             os.path.join(self.save_dir, 'test_result_' + str(self.env.delay.p) + '.pt')
         else:

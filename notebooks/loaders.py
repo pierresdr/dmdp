@@ -31,8 +31,8 @@ def stats_train(method=None, source=None, test_type=None, epoch=0):
     return mean, std
 
 
-def load_test_avg(path, epoch=0):
-    if epoch != 0:
+def load_test_avg(path, epoch=None):
+    if epoch is not None:
         test = '/test_result_' + str(epoch) + '.pt'
     else:
         test = '/test_result.pt'
@@ -40,8 +40,8 @@ def load_test_avg(path, epoch=0):
     return [np.average(ckpt['reward'])]
 
 
-def load_test_std(path, epoch=0):
-    if epoch != 0:
+def load_test_std(path, epoch=None):
+    if epoch is not None:
         test = '/test_result_' + str(epoch) + '.pt'
     else:
         test = '/test_result.pt'
@@ -49,7 +49,7 @@ def load_test_std(path, epoch=0):
     return [np.std(ckpt['reward'])]
 
 
-def stats_test(method=None, source=None, test_type=None, epoch=0):
+def stats_test(method=None, source=None, test_type=None, epoch=None):
     path = '../output/' + method + '/Pendulum-' + source + '/Results-' + test_type
     subfolders = [f.path for f in os.scandir(path) if f.is_dir()]
     rewards = [load_test_avg(folder, epoch=epoch) for folder in subfolders]
