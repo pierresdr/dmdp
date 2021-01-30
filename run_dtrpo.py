@@ -34,7 +34,7 @@ def launch_dtrpo(args, seed):
     if args.mode == 'train':
 
         # Create output folder and save training parameters
-        save_dir = get_output_folder(args.save_dir, args.env, args.env)
+        save_dir = get_output_folder(args.save_dir, args.env)
         with open(os.path.join(save_dir, 'model_parameters.txt'), 'w') as text_file:
             json.dump(args.__dict__, text_file, indent=2)
 
