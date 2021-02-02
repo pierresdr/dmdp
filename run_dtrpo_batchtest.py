@@ -2,8 +2,8 @@ import os
 import numpy as np
 
 os.system("conda activate Thesis")
-delays = [10]
-tests = [0.7, 0.6, 0.55]
+delays = [3, 5, 10, 15]
+tests = [3, 5, 10, 15]
 
 # DTRPO Deterministic Delay Pendulum Tests
 for delay in delays:
@@ -12,14 +12,14 @@ for delay in delays:
     runs = len(subfolders)
 
     for test in tests:
-        test_type = 'delayP' + str(test)
+        test_type = 'delay' + str(test)
         run = 0
         for folder in subfolders:
             seed = np.random.randint(10000)
             print('[METHOD]: DTRPO Delay' + str(delay) + '\t[DELAY]: ' + str(test) + '\t[SEED]: ' + str(seed) +
                   '\t[RUN]: ' + str(run) + '/' + str(runs))
             os.system('python run_dtrpo.py --env=Pendulum-v0 --mode=test --seeds ' + str(seed) +
-                      ' --stochastic_delays --max_delay=50 --delay_proba=' + str(test) +
+                      ' --delay=' + str(test) +
                       ' --epoch_load=2000 --test_episodes=50 --test_steps=250 --test_type=' + test_type +
                       ' --save_dir ' + folder)
             run += 1
