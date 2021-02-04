@@ -29,7 +29,7 @@ def launch_dtrpo(args, seed):
     env = DelayWrapper(env, delay=args.delay, stochastic_delays=args.stochastic_delays, p_delay=args.delay_proba,
                        max_delay=args.max_delay)
     update_message = 'Running env {} with initial dealy {}, stochastic delay is {},\
-             delay probability {}'.format(env, args.delay, args.stochastic_delays, args.delay_proba)
+             delay probability {}'.format(args.env, args.delay, args.stochastic_delays, args.delay_proba)
     prYellow(update_message)
 
 
