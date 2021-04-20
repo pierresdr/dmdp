@@ -1,1 +1,2 @@
 from gym_bicycle.envs.bicycle_env import BicycleEnv
+from gym_bicycle.envs.bicycleride_env import BicycleRideEnv
