@@ -1,0 +1,187 @@
+Testing Process Breakdown
+
+All results are reported as Average of the 3 seeds run for each type of Encoder.
+All the Tests are run with Delay=3, if not specified.
+
+1. Encoder Parameters
+    The First set of Tests has been done for the Encoder's Parameters (in the folder 'EncoderParameters'). This batch of
+    tests revealed that Encoder_dim and Encoder_layers are responsible for the best performance gain and that
+    Encoder_dim is the parameter with the best trade-off between performance gain and having more parameters in the
+    network.
+    The Best Encoder so far was [8, 512, 2, 1] - 1329163, with good performances (max 5% of Error on State Dimension),
+    but it also required an enormous number of parameters.
+    As a result:
+
+    Chosen Encoder: [8, 512, 2, 1] - 1329163
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-EncoderParameters
+    Results are presents in the Notebook: results/recoencoder_pendulumdelay_encoderparameters.ipynb
+
+2. Adam Learning Rate
+    Precedent tests were carried out with AdamLr=0.0001. One way of speeding up the Learning process and obtaining
+    the same or comparable performances to [8, 512, 2, 1]  - 1329163 without having so many parameters could be
+    enlarging the Learning Rate of the Optimizer.
+    [8, 128, 2, 1] - 86539 has been tested with AdamLr=[0.001, 0.01, 0.1] showing very high performance gain over
+    AdamLr=0.0001. With AdamLr=0.001 its performances were a bit lower than [8, 512, 2, 1] - 1329163, while
+    AdamLr=0.01 would even outperform it, showing lower % errors in the tests after Learning, reaching
+    [3.19%, 3.27%, 1.37%] of Error.
+    At last, AdamLr=0.1 has proven to be very unstable, taking too large optimization steps and bringing down
+    performances.
+    As a result:
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 with AdamLr=[0.01, 0.001]
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-AdamLr
+    Results are presents in the Notebook: results/recoencoder_pendulumdelay_adamlr.ipynb
+
+3. Dropout
+    Precedent tests were carried out with Dropout=0.1. Following the same process of thoughts, Dropout was removed and
+    [8, 128, 2, 1] - 86539 with AdamLr=0.01 has been tested. The Encoder without Dropout showed slightly better
+    performances in Train and showed almost the same performances in Tests, with the % Error to [2.74%, 3.9%, 1.39%].
+    No clear benefits of deleting Dropout.
+    As a result:
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 with AdamLr=[0.01] and Dropout=[0.0, 0.1]
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-Dropout
+    Results are present in the Notebook: results/recoencoder_pendulumdelay_dropout.ipynb
+
+4. Rescaling
+    Precedent tests were carried out input the State in the Encoder without any normalization or rescaling, thus
+    leaving the Encoder to deal with different dimensions magnitude. Even though in Inverted Pendulum the State has
+    no huge difference in dimension magnitudes, Rescaling/Normalization should be required to extend the Encoder
+    to every possible Environment, regardless of their State Dimensions relative Magnitudes.
+    Tests with AdamLr=0.01 and Rescaling showed that training with AdamLr=0.01 is very unstable, taking the
+    optimization process far away from a local optima and then 'coming back' on track to converge to a higher value
+    of the Loss Function. For this reason, other tests have been conducted with the purpose of finding the highest
+    but stable AdamLr value with Rescaling: 0.005.
+    Since Dropout test was not really clear on how to proceed, both Dropout=0.0 and Dropout=0.1 has been tested:
+    - AdamLr=0.005 Dropout=0.1 [3.96%, 3.58%, 1.04%]
+    - AdamLr=0.005 Dropout=0.0 [2.84%, 2.69%, 0.76%]
+
+    Results shows that Input/Output Rescaling is helping in optimizing each State Dimension more equally and Dropout=0.0
+    showed improved performances, infact the final errors are: [2.84%, 2.69%, 0.76%]; the 1th Dim has slightly higher
+    error, the 2nd is halved and the 3rd is reduced. Furthermore, this result is obtained with a lower Learning Rate,
+    which should penalize performances.
+    As a result:
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 with AdamLr=[0.005] Dropout=[0.0] and InputRescaling
+                    It could be still useful in the next tests to try AdamLr=0.01 and Dropout=0.1
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-Rescaling
+    Results are present in the Notebook: results/recoencoder_pendulumdelay_rescaling.ipynb
+
+5. NormLayer Option: Adding a NormLayer after the Hidden Layer
+    Precedent tests were carried out without a Normalization Layer for the Hidden Layer after the Encoder. These set of
+    tests is carried out to see if adding a Normalization Layer could be helpful towards State Prediction.
+    The Encoders Tested are:
+    - [8, 128, 2, 1] - 86795 with AdamLr=[0.005] Dropout=[0.0] with InputRescaling and the NormLayer Option
+        Test Performances: [3.8%, 4.24%, 0.65%]
+    - [8, 128, 2, 1] - 86795 with AdamLr=[0.01]  Dropout=[0.0] with InputRescaling and the NormLayer Option
+        Test Performances: [12.36%, 13.10%, 6.16%]
+    AdamLr=0.01 has proven to be very unstable, while AdamLr=0.005 showed worse performances with the LayerNorm Option.
+
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-NormLayers
+    Results are present in the Notebook: results/recoencoder_pendulumdelay_layernorm.ipynb
+
+6. NoNormLayer Option: No NormLayers
+    Quick test removing NormLayers. Encoder Tested:
+    - [8, 128, 2, 1] - 86795 with AdamLr=[0.005] Dropout=[0.0] with InputRescaling and no NormLayers
+        Test Performances: [4.21%, 4.21%, 1.39%]
+    Worse performances.
+
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-BatchNorm
+    Results are present in the Notebook: results/recoencoder_pendulumdelay_batchnorm.ipynb
+
+7. BatchNorm Option: substituting LayerNorm with BatchNorm
+    This tests aim to observe the behaviour of Batch Normalization as opposed to Layer Normalization. Also, a BatchNorm
+    Layer has been added right after Encoder Hidden_Layer in some tests. Encoder Tested:
+    - [8, 128, 2, 1] - 86795 with AdamLr=0.005 Dropout=0.0 InputRescaling BatchNormLayers=2
+        Test Performances: [4.41%, 2.57%, 1.24%]
+    - [8, 128, 2, 1] - 86539 with AdamLr=0.005 Dropout=0.0 InputRescaling BatchNormLayers=1
+        Test Performances: [3.42%, 2.68%, 1.46%]
+    - [8, 128, 2, 1] - 86539 with AdamLr=0.001 Dropout=0.0 InputRescaling BatchNormLayers=1
+        Test Performances: [4.55%, 4.00%, 1.83%]
+    - [8, 128, 2, 1] - 86539 with AdamLr=0.005 Dropout=0.1 InputRescaling BatchNormLayers=1
+        Test Performances: [4.23%, 3.84%, 2.52%]
+    Even though the Second Encoder showed slightly lower Loss in Training w.r.t. the Best Encoder so far (from Rescaling)
+    but in the end Test performances showed a slightly worse generalization.
+
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-BatchNorm
+    Results are present in the Notebook: results/recoencoder_pendulumdelay_batchnorm.ipynb
+
+8. Uniform Distribution
+    Set of tests to observe the behaviour of the Encoder when a different distribution is used to sample random action.
+    Previous tests wew carried out using a Normal Distribution.
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling Dist=Uniform
+        Test Performances with Uniform Distribution: [1.76%, 2.31%, 0.55%]
+        Test Performances with Normal  Distribution: [1.75%, 2.31%, 0.55%]
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 InputRescaling   Dist=Uniform
+        Test Performances with Uniform Distribution: [2.95%, 2.67%, 1.11%]
+        Test Performances with Normal  Distribution: [2.92%, 2.65%, 1.10%]
+
+    Also the Best Encoder so far (from 4. Rescaling) is tested with Uniform Distribution:
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 InputRescaling   Dist=Normal
+        Test Performances with Uniform Distribution: [2.86%, 2.71%, 0.77%]
+        Test Performances with Normal  Distribution: [2.84%, 2.69%, 0.76%] (Known performances from point 4).
+
+    And at last the Best Encoder so far (from 4. Rescaling) is tested without InputRescaling:
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling  Dist=Normal
+        Test Performances with Uniform Distribution: [1.73%, 2.13%, 0.62%]
+        Test Performances with Normal  Distribution: [1.71%, 2.09%, 0.62%]
+
+    Three conclusions can be made from this batch of tests:
+        1. Tests shows that learning using Normal or Uniform distribution do not impact the performances substantially,
+            Normal Distribution seems slightly better but this fact should be confirmed by a more solid number of trials.
+        2. Tests shows that Encoders trained with one Distribution are actually capable of State Prediction at the same
+            level of performances on both Distributions.
+        3. Input Rescaling is impacting badly on performances, as shown by the Last tests. This may suggest that the
+            LayerNorm inserted after the Positional Encoding is enough to let the Encoder learn State Prediction. This
+            contradicts the results in point 4: InputRescaling was chosen because it showed because of better
+            performances, but the actual reason resided in the AdamLr=0.005 to be more stable and efficient value for
+            Adam Optimizer than 0.01.
+
+9. MAE Loss Function
+    In all precedent tests, Encoder was trained with MSE Loss computed between the Predicted State and the Actual State,
+    and given the numerical properties of MSE Loss, the 3rd State Space Dimension (Speed) was optimized more strongly
+    than the others, since it is also the one with the higher order of magnitude. Since introducing State Rescaling
+    seems to harm Encoder predictions, an Encoder Trained with MAE Loss, which should not punish Speed more than other
+    dimensions, is tested.
+
+    Best Encoder so far:
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances with Normal Distribution: [1.71%, 2.09%, 0.62%], MSELoss=0.0076
+
+    Tested Encoders:
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MAE
+        Test Performances with Normal Distribution: [1.18%, 1.56%, 0.71%], MSELoss=0.0077
+    - [8, 128, 2, 1] - 86539 Lr=0.001 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MAE
+        Test Performances with Normal Distribution: [1.27%, 1.51%, 0.60%], MSELoss=0.0062
+
+    Training with MAE Loss seems to lead to better results in testing, the second Encoder trained with MAE is performing
+    better than the Best Encoder so far in both nMAE Error and MSELoss on average.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.005, 0.001] Dropout=[0.0] NoInputRescaling Dist=Normal Loss=MAE
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-MAE
+    Results are present in the Notebook: results/
+
+10. Causal Encoder
+    In all precedent tests, the Encoder input is a sequence of (State, Action) built from the Extended State, repeating
+    the State and coupling it with each subsequent Action. This 'phrase' is then taken by the Encoder in input as is.
+    Given the sequential nature of the 'phrase' (Actions are actually played in order, step after step), we test a
+    Causal Encoder which process a masked input which avoid 'looking forward' in time.
+
+    Best Encoder so far:
+    - [8, 128, 2, 1] - 86539 Lr=0.001 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MAE Type=Standard
+        Test Performances with Normal Distribution: [1.27%, 1.51%, 0.60%], MSELoss=0.0062
+
+    Tested Encoders:
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE Type=Causal
+        Test Performances with Normal Distribution: [1.65%, 2.14%, 0.71%], MSELoss=0.0083
+    - [8, 128, 2, 1] - 86539 Lr=0.005 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MAE Type=Causal
+        Test Performances with Normal Distribution: [0.95%, 1.12%, 0.52%], MSELoss=0.0044
+    - [8, 128, 2, 1] - 86539 Lr=0.001 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MAE Type=Causal
+        Test Performances with Normal Distribution: [1.36%, 1.47%, 0.56%], MSELoss=0.0060
+
+    As the tests suggests, the combination of a Causal Encoder and training with MAE Loss results in lowering the
+    % Error as well as the average MSE Loss.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.005] Dropout=[0.0] NoInputRescaling Dist=Normal Loss=MAE Type=Causal
+    Models are present in the Folder: output/recoencoder/PendulumDelayEnv-Results/Results-Causal
+    Results are present in the Notebook: results/

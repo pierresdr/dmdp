@@ -1,0 +1,35 @@
+Testing Process Breakdown
+
+All results are reported as Average of the 3 seeds run for each type of Encoder.
+All the Tests are run with Delay=3, if not specified.
+
+
+Mask, transformer encoder and decoder are used by default. The input to the decoder during training is 
+the series of states s_t-m,...,s_t-1 and the decoder outputs predictions for s_t-m+1,...,s_t.
+
+--> Test 1 PendulumDelayEnv - 
+    params:     loss=MAE, delay=3, dropout=0, d_model=64, n_head=1, dim_feedforward=16, adam_lr=0.005
+    name:       PendulumDelayEnv-run1
+    results:    MSE: 0.4047, RMSE: 0.6361, nMAE (dim 1): 0.1157, nMAE (dim 2): 0.098 nMAE (dim 3): 0.0529
+
+
+The optimization schedule suggested in Attention is all you need is implement to the network. More precisely:
+    "We used the Adam optimizer with β1 = 0.9, β2 = 0.98 and  = 10−9. We varied the learning rate over the course of training, according to the formula:
+        lrate = d_model^−0.5 · min(step_num−0.5, step_num · warmup_steps−1.5)
+    This corresponds to increasing the learning rate linearly for the frst warmup_steps training steps,
+    and decreasing it thereafter proportionally to the inverse square root of the step number."
+
+
+
+--> Test 2 PendulumDelayEnv - 
+    params:     loss=MAE, delay=3, dropout=0, d_model=64, n_head=2, dim_feedforward=32, adam_lr=0.005, n_warmup_steps=50
+    name:       PendulumDelayEnv-run2
+    results:    MSE: 0.4830, RMSE: 0.6950, nMAE (dim 1): 0.134, nMAE (dim 2): 0.0987 nMAE (dim 3): 0.0583
+
+
+The following network is trained to recover only the last state. The loss is computed only between the last predicted state and the current state.
+
+--> Test 3 PendulumDelayEnv - 
+    params:     loss=MAE, delay=3, dropout=0, d_model=64, n_head=2, dim_feedforward=16, adam_lr=0.005, n_warmup_steps=50, only_last_state=True
+    name:       PendulumDelayEnv-run3
+    results:    MSE: 5.0242, RMSE: 2.2415, nMAE (dim 1): 0.1645, nMAE (dim 2): 0.1479 nMAE (dim 3): 0.1994
