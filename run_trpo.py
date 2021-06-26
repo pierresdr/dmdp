@@ -1,5 +1,5 @@
 import json, argparse
-import gym#, gym_puddle
+import gym
 from importlib import import_module
 from utils import TRPOCore as Core
 from algorithm.trpo import TRPO
