@@ -416,6 +416,7 @@ class DTRPO:
         # Set the Variable that will stop Belief Module Training to False
         stop_belief_training = False
 
+
         # ---- TRAINING LOOP ----
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
