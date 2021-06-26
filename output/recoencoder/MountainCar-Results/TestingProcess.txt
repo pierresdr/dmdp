@@ -1,0 +1,171 @@
+Testing Process Breakdown
+
+All results are reported as Average of the 3 seeds run for each type of Encoder.
+All the Tests are run with Delay=3, if not specified.
+
+1. Adam Learning Rate
+    Different Learning Rate for Adam Optimizer are tested in order to choose one or a set.
+    Encoder tested:
+    - [8, 128, 2, 1] - 86282 Lr=0.005  Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances: [2.99%, 7.12%], MSELoss=0.0025
+    - [8, 128, 2, 1] - 86282 Lr=0.01   Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances: [3.36%, 3.97%], MSELoss=0.0032
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances: [0.97%, 4.28%], MSELoss=0.0003
+    - [8, 128, 2, 1] - 86282 Lr=0.0005 Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances: [1.37%, 4.39%], MSELoss=0.0005
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 with AdamLr=[0.001]
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-AdamLr
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_adamlr.ipynb
+
+2. Rescaling
+    Rescaling Option is tested on the best Encoder from point 1, to assess its impact.
+    Encoder tested:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MSE
+        Test Performances: [0.93%, 3.44%], MSELoss=0.00026
+
+    Best Encoder from Point 1:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 NoInputRescaling Dist=Normal Loss=MSE
+        Test Performances: [0.97%, 4.28%], MSELoss=0.0003
+
+    Slightly improved performances: Rescaling option is kept, given that it should always be enabled so to keep the
+    method compatible with any environment regardless of the magnitudes of its State Space Dimensions.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.001] InputRescaling
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-AdamLr
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_rescaling.ipynb
+
+3. MAE Loss
+    Encoder Trained using MAE Loss instead of MSE Loss. It has proven to be a more effective Loss function for
+    PendulumDelay Enviroment.
+    Encoder Tested:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAE
+        Test Performances: [0.87%, 1.62%], MSELoss=0.000187
+
+    Best Encoder from Point 2:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MSE
+        Test Performances: [0.93%, 3.44%], MSELoss=0.00026
+
+    As already observed with Pendulum Delay Environment, Encoder trained using MAE Loss shows consistent improvements
+    in the % Errors and also in MSE Loss w.r.t. Encoder trained with MSE Loss.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.001] InputRescaling Dist=Normal Loss=MAE
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-MAE
+    Results are presents in the Notebook: No Notebook since the two Loss cannot be compared directly.
+
+4. Causal Encoder
+    Encoder trained with Causal option: input "words" are processed using a mask that avoids "looking forward" to other
+    words.
+    Tested Encoder:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAE Type=Causal
+        Test Performances: [1.44%, %1.77], MSELoss=0.00046
+
+    Best Encoder from Point 3:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAE Type=Standard
+        Test Performances: [0.87%, 1.62%], MSELoss=0.000187
+
+    No substantial benefits from using a Causal Encoder on MountainCar Environment.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.001] InputRescaling Dist=Normal Loss=MAE
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-Causal
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_causal.ipynb
+
+5. Last State Option
+    The Encoder is trained by computing the Loss only over the Last State Prediction S_t, in order to observe whether
+    trying to learn to predict more step at once is slowering its performances. Also the number of Trajectories is
+    tested to see the impact on performances and different Learning Rate are tested.
+    Tested Encoders:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=50
+        Test Performances on predicting Last State: [1.11%, 1.74%], MSELoss=0.00028
+        Test Performances on predicting all States: [3.74%, 2.74%], MSELoss=0.00397
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=100
+        Test Performances on predicting Last State: [0.95%, 1.85%], MSELoss=0.00022
+        Test Performances on predicting all States: [3.43%, 2.95%], MSELoss=0.00351
+    - [8, 128, 2, 1] - 86282 Lr=0.005  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=100
+        Test Performances on predicting Last State: [2.12%, 3.53%], MSELoss=0.00106
+        Test Performances on predicting all States: [2.30%, 3.47%], MSELoss=0.00126
+    - [8, 128, 2, 1] - 86282 Lr=0.0005 Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=100
+        Test Performances on predicting Last State: [0.91%, 2.49%], MSELoss=0.00023
+        Test Performances on predicting all States: [2.23%, 3.38%], MSELoss=0.00313
+
+    Best Encoder from Point 3:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAE Type=Standard N_traj=100
+        Test Performances on predicting all States: [0.87%, 1.62%], MSELoss=0.000187
+        Test Performances on predicting Last State: [0.92%, 1.64%], MSELoss=0.000207
+
+    There is no clear benefit from optimizing the Encoder by computing the Loss only on the Last State. Performances of
+    the Second Encoder is comparable to the Best Encoder so far when predicting the Last State, but as every other
+    Encoder, it loses its precision towards other States.
+
+    Chosen Encoder: [8, 128, 2, 1] - 86539 AdamLr=[0.001] InputRescaling Dist=Normal Loss=MAE
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-LastState
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_.ipynb
+
+6. Uniform Distribution
+    The purpose is to observe whether a Uniform Distribution to draw Action provides a better exploration of the
+    Environment so to improve the Encoder Performances.
+    Tested Encoders:
+
+    - [8, 128, 2, 1] - 86282 Lr=0.001 Dropout=0.0 InputRescaling Dist=Uniform Loss=MAELastState Type=Standard N_Traj=100
+        Test Performances on predicting Last State with Normal  Dist: [0.59%, 1.43%], MSELoss=0.00009
+        Test Performances on predicting Last State with Uniform Dist: [0.90%, 1.61%], MSELoss=0.00021
+        Test Performances on predicting all States with Normal  Dist: [3.09%, 2.63%], MSELoss=0.00288
+        Test Performances on predicting all States with Uniform Dist: [3.09%, 2.81%], MSELoss=0.00287
+
+    - [8, 128, 2, 1] - 86282 Lr=0.001 Dropout=0.0 InputRescaling Dist=Uniform Loss=MAE Type=Standard N_Traj=100
+        Test Performances on predicting Last State with Normal  Dist: [1.27%, 1.31%], MSELoss=0.00042
+        Test Performances on predicting Last State with Uniform Dist: [1.26%, 1.51%], MSELoss=0.00041
+        Test Performances on predicting all States with Normal  Dist: [0.74%, 1.50%], MSELoss=0.00015
+        Test Performances on predicting all States with Uniform Dist: [0.78%, 1.70%], MSELoss=0.00017
+
+    Best Encoder from Point 3:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAE Type=Standard N_traj=100
+        Test Performances on predicting Last State with Normal  Dist: [0.92%, 1.64%], MSELoss=0.00021
+        Test Performances on predicting Last State with Uniform Dist: [0.95%, 1.91%], MSELoss=0.00023
+        Test Performances on predicting all States with Normal  Dist: [0.87%, 1.62%], MSELoss=0.00019
+        Test Performances on predicting all States with Uniform Dist: [0.94%, 1.89%], MSELoss=0.00023
+
+    Results are interesting. The Encoder trained by using only the Last State with Uniform Distribution is the best one
+    in Last State prediction. The Encoder trained by using all States with Uniform Distribution is the best one in all
+    State Prediction. The Best Encoder from Point 3 is more balanced across all tests, but performs worse than the other
+    two in their category.
+
+    Chosen Encoder: No Encoder is clearly better than the other.
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-Uniform
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_.ipynb
+
+7. Using more Data
+    The purpose is to see how the performances improves with more Trajectories per Episode and more Steps per
+    trajectory.
+    Tested Encoders:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=50 Steps=1000
+        Test Performances on predicting Last State: [1.76%, 0.92%], MSELoss=0.00055
+        Test Performances on predicting all States: [2.56%, 1.65%], MSELoss=0.00125
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=100 Steps=1000
+        Test Performances on predicting Last State: [0.95%, 0.95%], MSELoss=0.00018
+        Test Performances on predicting all States: [1.60%, 1.65%], MSELoss=0.00056
+
+    Compared Encoder from Point 5:
+    - [8, 128, 2, 1] - 86282 Lr=0.001  Dropout=0.0 InputRescaling Dist=Normal Loss=MAELastState Type=Standard N_Traj=100 Steps=250
+        Test Performances on predicting Last State: [0.95%, 1.85%], MSELoss=0.00022
+        Test Performances on predicting all States: [3.43%, 2.95%], MSELoss=0.00351
+
+    Gain of performance on tests is substanstial from the Compared Encoder from Point 5 to the second Encoder tested, in
+    both categories tested. It has to be noted that while the performances on tests is improved, MAE Loss in training
+    is not significantly better.
+
+    Models are present in the Folder: output/recoencoder/MountainCarDelayEnv-Results/Results-AllDataMAE
+    Results are presents in the Notebook: results/recoencoder_mountaincardelay_causal.ipynb
+
+8. CausalEncoder and LastState Optimization with Uniform Distribution
+    In light of results from Point 6, the purpose of this tests is to evaluate the performances of those Encoders with
+    Causal Option active.
+    Tested Encoder:
+    - [8, 128, 2, 1] - 86282 Lr=0.001 Dropout=0.0 InputRescaling Dist=Uniform Loss=MAELastState Type=Causal N_Traj=100
+        Test Performances on predicting Last State with Normal  Dist: [0.88%, 1.39%], MSELoss=0.00019
+        Test Performances on predicting Last State with Uniform Dist: [0.89%, 1.60%], MSELoss=0.00021
+        Test Performances on predicting all States with Normal  Dist: [1.88%, 2.63%], MSELoss=0.00101
+        Test Performances on predicting all States with Uniform Dist: [1.51%, 2.80%], MSELoss=0.00104
+
+    No noticeable gain in performances w.r.t. the previous tests.
