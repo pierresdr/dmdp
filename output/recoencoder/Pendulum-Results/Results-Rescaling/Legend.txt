@@ -1,0 +1,18 @@
+#-------------------#
+|   Folder Legend   |
+#-------------------#
+
+Parameters used for the following set of Tests can be found in any folder of these tests. The changing parameter
+between these tests is adam_lr. Rescaling Option is always active. Below are denoted as:
+
+[encoder_ff_dim, encoder_dim, n_head, encoder_layers] - NumberOfParamers Lr=adam_lr
+
+PendulumDelayEnv-run1:  Delay 3  Seed 0 Encoder [8, 128, 2, 1] - 86539  Lr=0.001 Dropout=0.1
+PendulumDelayEnv-run2:  Delay 3  Seed 1 Encoder [8, 128, 2, 1] - 86539  Lr=0.001 Dropout=0.1
+PendulumDelayEnv-run3:  Delay 3  Seed 2 Encoder [8, 128, 2, 1] - 86539  Lr=0.001 Dropout=0.1
+PendulumDelayEnv-run4:  Delay 3  Seed 0 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.1
+PendulumDelayEnv-run5:  Delay 3  Seed 1 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.1
+PendulumDelayEnv-run6:  Delay 3  Seed 2 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.1
+PendulumDelayEnv-run7:  Delay 3  Seed 0 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.0
+PendulumDelayEnv-run8:  Delay 3  Seed 1 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.0
+PendulumDelayEnv-run9:  Delay 3  Seed 2 Encoder [8, 128, 2, 1] - 86539  Lr=0.005 Dropout=0.0

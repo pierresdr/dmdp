@@ -1,0 +1,66 @@
+#-------------------#
+|   Folder Legend   |
+#-------------------#
+
+Parameters used for the following set of Tests can be found in any folder of these tests. The changing parameters
+between these tests are: encoder_dim, encoder_ff_dim, n_head, encoder_layers. Below are denoted as:
+
+[encoder_ff_dim, encoder_dim, n_head, encoder_layers] - NumberOfParameters
+
+PendulumDelayEnv-run1:  Delay 3  Seed 0 Encoder [16, 16, 4, 1] - 2131
+PendulumDelayEnv-run2:  Delay 3  Seed 1 Encoder [16, 16, 4, 1] - 2131
+PendulumDelayEnv-run3:  Delay 3  Seed 2 Encoder [16, 16, 4, 1] - 2131
+PendulumDelayEnv-run4:  Delay 3  Seed 0 Encoder [32, 32, 8, 2] - 14307
+PendulumDelayEnv-run5:  Delay 3  Seed 1 Encoder [32, 32, 8, 2] - 14307
+PendulumDelayEnv-run6:  Delay 3  Seed 2 Encoder [32, 32, 8, 2] - 14307
+PendulumDelayEnv-run7:  Delay 3  Seed 0 Encoder [16, 32, 8, 2] - 12227
+PendulumDelayEnv-run8:  Delay 3  Seed 1 Encoder [16, 32, 8, 2] - 12227
+PendulumDelayEnv-run9:  Delay 3  Seed 2 Encoder [16, 32, 8, 2] - 12227
+PendulumDelayEnv-run10: Delay 3  Seed 0 Encoder [32, 16, 8, 2] - 4883
+PendulumDelayEnv-run11: Delay 3  Seed 1 Encoder [32, 16, 8, 2] - 4883
+PendulumDelayEnv-run12: Delay 3  Seed 2 Encoder [32, 16, 8, 2] - 4883
+PendulumDelayEnv-run13: Delay 3  Seed 2 Encoder [32, 32, 4, 2] - 14307
+PendulumDelayEnv-run14: Delay 3  Seed 1 Encoder [32, 32, 4, 2] - 14307
+PendulumDelayEnv-run15: Delay 3  Seed 0 Encoder [32, 32, 4, 2] - 14307
+PendulumDelayEnv-run16: Delay 3  Seed 0 Encoder [32, 32, 8, 1] - 7843
+PendulumDelayEnv-run17: Delay 3  Seed 1 Encoder [32, 32, 8, 1] - 7843
+PendulumDelayEnv-run18: Delay 3  Seed 2 Encoder [32, 32, 8, 1] - 7843
+
+See results_recoencoder_pendulumdelay Notebook for reasons about next tests (Scaling up Encoder_dim):
+
+PendulumDelayEnv-run19: Delay 3  Seed 0 Encoder [16, 64, 4, 4] - 80899
+PendulumDelayEnv-run20: Delay 3  Seed 1 Encoder [16, 64, 4, 4] - 80899
+PendulumDelayEnv-run21: Delay 3  Seed 2 Encoder [16, 64, 4, 4] - 80899
+PendulumDelayEnv-run22: Delay 3  Seed 0 Encoder [8, 128, 2, 1] - 86539
+PendulumDelayEnv-run23: Delay 3  Seed 1 Encoder [8, 128, 2, 1] - 86539
+PendulumDelayEnv-run24: Delay 3  Seed 2 Encoder [8, 128, 2, 1] - 86539
+PendulumDelayEnv-run25: Delay 3  Seed 2 Encoder [8, 192, 2, 1] - 191243
+PendulumDelayEnv-run26: Delay 3  Seed 1 Encoder [8, 192, 2, 1] - 191243
+PendulumDelayEnv-run27: Delay 3  Seed 0 Encoder [8, 192, 2, 1] - 191243
+PendulumDelayEnv-run28: Delay 3  Seed 0 Encoder [8, 256, 2, 1] - 336907
+PendulumDelayEnv-run29: Delay 3  Seed 1 Encoder [8, 256, 2, 1] - 336907
+PendulumDelayEnv-run30: Delay 3  Seed 2 Encoder [8, 256, 2, 1] - 336907
+PendulumDelayEnv-run31: Delay 3  Seed 0 Encoder [8, 512, 2, 1] - 1329163
+PendulumDelayEnv-run32: Delay 3  Seed 1 Encoder [8, 512, 2, 1] - 1329163
+PendulumDelayEnv-run33: Delay 3  Seed 2 Encoder [8, 512, 2, 1] - 1329163
+
+See results_recoencoder_pendulumdelay Notebook for reasons about nexts tests (Scaling up Encoder_layer):
+
+PendulumDelayEnv-run34: Delay 3  Seed 0 Encoder [8, 128, 2, 2] - 155283
+PendulumDelayEnv-run35: Delay 3  Seed 1 Encoder [8, 128, 2, 2] - 155283
+PendulumDelayEnv-run36: Delay 3  Seed 2 Encoder [8, 128, 2, 2] - 155283
+PendulumDelayEnv-run37: Delay 3  Seed 2 Encoder [8, 192, 2, 2] - 343507
+PendulumDelayEnv-run38: Delay 3  Seed 1 Encoder [8, 192, 2, 2] - 343507
+PendulumDelayEnv-run39: Delay 3  Seed 0 Encoder [8, 192, 2, 2] - 343507
+PendulumDelayEnv-run40: Delay 3  Seed 0 Encoder [8, 256, 2, 2] - 605459
+PendulumDelayEnv-run41: Delay 3  Seed 1 Encoder [8, 256, 2, 2] - 605459
+PendulumDelayEnv-run42: Delay 3  Seed 2 Encoder [8, 256, 2, 2] - 605459
+
+See results_recoencoder_pendulumdelay Notebook for reasons about nexts tests (Scaling up Encoder_ff_dim):
+
+PendulumDelayEnv-run43: Delay 3  Seed 0 Encoder [16, 128, 2, 1] - 88595
+PendulumDelayEnv-run44: Delay 3  Seed 1 Encoder [16, 128, 2, 1] - 88595
+PendulumDelayEnv-run45: Delay 3  Seed 2 Encoder [16, 128, 2, 1] - 88595
+PendulumDelayEnv-run46: Delay 3  Seed 0 Encoder [32, 128, 2, 1] - 92707
+PendulumDelayEnv-run47: Delay 3  Seed 1 Encoder [32, 128, 2, 1] - 92707
+PendulumDelayEnv-run48: Delay 3  Seed 2 Encoder [32, 128, 2, 1] - 92707

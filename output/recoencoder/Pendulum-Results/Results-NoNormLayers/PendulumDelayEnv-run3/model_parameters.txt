@@ -1,0 +1,22 @@
+{
+  "mode": "train",
+  "env": "PendulumDelayEnv",
+  "train_episodes": 200,
+  "test_episodes": 1,
+  "n_trajectories": 100,
+  "max_timesteps": 250,
+  "delay": 3,
+  "seed": 2,
+  "adam_lr": 0.005,
+  "save_dir": "./output/recoencoder/PendulumDelayEnv-Results\\PendulumDelayEnv-run3",
+  "per_episode": false,
+  "encoder_ff_hid": 8,
+  "encoder_dim": 128,
+  "n_head": 2,
+  "encoder_layers": 1,
+  "dropout": 0.0,
+  "rescale": false,
+  "normlayers": false,
+  "nonormlayers": true,
+  "network_parameters": 86283
+}
