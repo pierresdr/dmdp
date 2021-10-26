@@ -120,9 +120,9 @@ class DTRPO:
             self.update_enc = self.update_enc_deter
             self.enc_optimizer = Adam(self.ac.enc.parameters(), lr=self.enc_lr)
         if enc_loss == 'mse':
-            self.ENCLoss = MSELoss(reduction='mean')
+            self.enc_loss = MSELoss(reduction='mean')
         elif enc_loss == 'mae':
-            self.ENCLoss = L1Loss(reduction='mean')
+            self.enc_loss = L1Loss(reduction='mean')
 
         # Count variables
         var_counts = tuple(Core.count_vars(module) for module in [self.ac.pi, self.ac.v, self.ac.enc])
@@ -170,37 +170,35 @@ class DTRPO:
         self.log_dir = os.path.join(self.save_dir,'log')
 
     def compute_loss_pi(self, data):
-        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
         # Policy loss
-        _, logp = self.ac.pi(obs.to(self.device), act.to(self.device))
-        ratio = torch.exp(logp - logp_old)
-        loss_pi = -(ratio * adv).mean()
-        del obs; del act; del adv; del logp_old; del logp
+        _, logp = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
+        ratio = torch.exp(logp - data['logp'])
+        loss_pi = -(ratio * data['adv']).mean()
+        del data
         return loss_pi
 
     def compute_loss_v(self, data):
-        obs, ret = data['obs'], data['ret']
-        return ((self.ac.v(obs.to(self.device)) - ret.to(self.device)) ** 2).mean()
+        return ((self.ac.v(data['obs'].to(self.device)) - data['ret'].to(self.device)) ** 2).mean()
 
     def compute_loss_enc_deter(self, data):
         """Compute the loss of the belief module for deterministic env.
         """
-        obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
-        preds = self.ac.enc.predict(obs.to(self.device))
-        del obs
-        return self.ENCLoss(preds[mask], states.to(self.device))
+        preds = self.ac.enc.predict(data['extended_states'].to(self.device))
+        return self.enc_loss(preds[data['mask']], data['hidden_states'].to(self.device))
 
     def compute_loss_enc_stoch(self, data):
         """Compute the loss of the belief stochastic for deterministic env.
         """
-        obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
-        u, log_probs = self.ac.enc.log_probs(obs.to(self.device), states.to(self.device), torch.from_numpy(mask).to(self.device))
+        u, log_probs = self.ac.enc.log_probs(
+            data['extended_states'].to(self.device), 
+            data['hidden_states'].to(self.device), 
+            torch.from_numpy(data['mask']).to(self.device))
         if self.epoch % self.save_period == 0:
             self.save_noise(u)
             self.save_proba(log_probs)
             # self.save_belief(obs)
             # self.save_hidden_state(obs)
-        del obs; del states; del mask; del u
+        del data
         return -log_probs.mean()
 
     def save_proba(self, log_probs):
@@ -244,9 +242,9 @@ class DTRPO:
         plt.close(fig)
 
     def compute_kl(self, data, old_pi):
-        obs, act = data['obs'], data['act']
-        pi, _ = self.ac.pi(obs.to(self.device), act.to(self.device))
+        pi, _ = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
+        del data
         return kl_loss
 
     # @torch.no_grad()
@@ -259,13 +257,12 @@ class DTRPO:
 
     @torch.no_grad()
     def compute_kl_loss_pi(self, data, old_pi):
-        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
         # Policy loss
-        pi, logp = self.ac.pi(obs.to(self.device), act.to(self.device))
-        ratio = torch.exp(logp - logp_old)
-        loss_pi = -(ratio * adv).mean()
+        pi, logp = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
+        ratio = torch.exp(logp - data['logp'])
+        loss_pi = -(ratio * data['adv']).mean()
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
-        del obs; del act; del adv 
+        del data
         return loss_pi, kl_loss
 
     def hessian_vector_product(self, data, old_pi, v):
@@ -285,8 +282,7 @@ class DTRPO:
         # If Pretraining then optimize only the Encoder
         if pretrain:
             # Encoder Update
-            enc_loss = self.update_enc()
-            self.enc_losses.append(enc_loss)
+            self.enc_losses.append(self.update_enc())
             # Value Function Loss Compatibility
             self.v_losses.append(np.nan)
             self.buf.reset()
@@ -294,10 +290,8 @@ class DTRPO:
         elif stop_belief_training:
             self.enc_losses.append(np.nan)
             data = self.buf.get()
-            obs = data['obs']
             with torch.no_grad():
-                obs = self.ac.enc(obs.to(self.device)).detach()
-            data['obs'] = obs
+                data['obs'] = self.ac.enc(data['obs'].to(self.device)).detach()
             # Policy Update
             self.update_pi(data)
             # Value Function Update
@@ -305,25 +299,22 @@ class DTRPO:
             self.v_losses.append(v_loss)
         # Else optimize Policy and Value Function
         else:
-            enc_loss = self.update_enc()
-            self.enc_losses.append(enc_loss)
+            self.enc_losses.append(self.update_enc())
             # Extract Encoder Prediction once for all the Networks that needs it
             data = self.buf.get()
-            obs = data['obs']
             with torch.no_grad():
-                obs = self.ac.enc(obs.to(self.device)).detach()
-            data['obs'] = obs
+                data['obs'] = self.ac.enc(data['obs'].to(self.device)).detach()
             # Policy Update
             self.update_pi(data)
             # Value Function Update
             v_loss = self.update_v(data)
             self.v_losses.append(v_loss)
+        del data
 
     def update_pi(self, data):
         # Compute old pi distribution
-        obs, act = data['obs'], data['act']
         with torch.no_grad():
-            old_pi, _ = self.ac.pi(obs.to(self.device), act.to(self.device))
+            old_pi, _ = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
 
         pi_loss = self.compute_loss_pi(data)
         pi_l_old = pi_loss.item()
@@ -367,7 +358,9 @@ class DTRPO:
             loss_enc.backward(retain_graph=True)
             self.enc_optimizer.step()
         self.ac.enc.eval()
-        return loss_enc.detach().item()
+        loss_enc_item = loss_enc.detach().item()
+        del loss_enc
+        return loss_enc_item
 
     def update_enc_stoch(self):
         # Encoder Learning
@@ -378,29 +371,25 @@ class DTRPO:
             self.maf_optimizer.zero_grad()
             data = self.buf.get_pred_data()
             loss_enc = self.compute_loss_enc(data)
-            # kl_reg = compute_kl_reg_for_belief(self, data, old_pi)
-            # if i == self.train_enc_iters-1:
             loss_enc.backward(retain_graph=True)
             self.enc_optimizer.step()
             self.maf_optimizer.step()
-            # else:
-            #     loss_enc.backward()
-            #     self.enc_optimizer.step()
-                # self.maf_optimizer.step()
+
         self.ac.enc.eval()
-        # for p in self.ac.enc.maf_proba.parameters():
-        #             p.data.clamp_(-1,1)
-        return loss_enc.detach().item()
+        loss_enc_item  = loss_enc.detach().item()
+        del loss_enc
+        return loss_enc_item
 
     def update_v(self, data):
         # Value Function Learning
-        loss_v = None
         for i in range(self.train_v_iters):
             self.vf_optimizer.zero_grad()
             loss_v = self.compute_loss_v(data)
             loss_v.backward()
             self.vf_optimizer.step()
-        return loss_v.detach().item()
+        loss_v_item = loss_v.detach().item()
+        del loss_v 
+        return loss_v_item
 
     def format_o(self, o):
         if isinstance(self.env.action_space, Discrete):
@@ -408,10 +397,9 @@ class DTRPO:
             temp_o = torch.tensor([i % self.act_dim == o[1][i // self.act_dim]
                                    for i in range(self.act_dim * len(o[1]))]).float()
 
-            o = torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
+            return torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
         else:
-            o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
-        return o
+            return torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
 
     def step_training(self, o, t, episode, ep_rewards, ep_lengths, ep_ret, ep_len, pretrain):
         # Select a new action
@@ -491,9 +479,9 @@ class DTRPO:
         self.elapsed_time = dt.now() - start_time
 
         # Gather Epoch results and print them
-        self.avg_reward.append(np.average(ep_rewards))
+        self.avg_reward.append(np.mean(ep_rewards))
         self.std_reward.append(np.std(ep_rewards))
-        self.avg_length.append(np.average(ep_lengths))
+        self.avg_length.append(np.mean(ep_lengths))
         self.timings.append(self.elapsed_time)
         self.print_update()
 
@@ -578,13 +566,13 @@ class DTRPO:
 
     def save_results(self):
         x = range(0, self.epoch, 1)
-        self.errorbar_plot(x, self.avg_reward, xlabel='Epochs', ylabel='Average Reward', filename='reward',
+        self.errorbar_plot(x, self.avg_reward, xlabel='Epochs', ylabel='Mean Reward', filename='reward',
                            error=self.std_reward)
-        self.scatter_plot(x, self.avg_reward, xlabel='Epochs', ylabel='Average Reward', filename='reward_scatter')
-        self.scatter_plot(x, self.enc_losses, xlabel='Epochs', ylabel='Encoder Loss', filename='encloss_scatter')
-        self.scatter_plot(x, self.v_losses, xlabel='Epochs', ylabel='Value Loss', filename='vloss_scatter')
+        self.scatter_plot(x, self.avg_reward, xlabel='Epochs', ylabel='Mean Reward', filename='reward_scatter')
+        self.scatter_plot(x, self.enc_losses, xlabel='Epochs', ylabel='Encoder Loss', filename='enc_loss_scatter')
+        self.scatter_plot(x, self.v_losses, xlabel='Epochs', ylabel='Value Loss', filename='v_loss_scatter')
 
-    def scatter_plot(self, x, y, xlabel='Epochs', ylabel='Average Reward', filename='reward'):
+    def scatter_plot(self, x, y, xlabel='Epochs', ylabel='Mean Reward', filename='reward'):
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -592,7 +580,7 @@ class DTRPO:
         plt.savefig(os.path.join(self.save_dir, filename + '.png'))
         plt.close(fig)
 
-    def errorbar_plot(self, x, y, xlabel='Epochs', ylabel='Average Reward', filename='reward', error=None):
+    def errorbar_plot(self, x, y, xlabel='Epochs', ylabel='Mean Reward', filename='reward', error=None):
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
