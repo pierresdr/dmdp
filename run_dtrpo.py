@@ -66,7 +66,8 @@ def launch_dtrpo(args, seed):
                       train_enc_iters=args.train_enc_iters, pretrain_epochs=args.pretrain_epochs,
                       pretrain_steps=args.pretrain_steps, enc_lr=args.enc_lr, use_belief=args.use_belief,
                       size_pred_buf=args.size_pred_buf, batch_size_pred=args.batch_size_pred,
-                      epochs_belief_training=args.epochs_belief_training, )
+                      epochs_belief_training=args.epochs_belief_training, 
+                      device=args.device,)
 
         dtrpo.train()
 
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     # General Arguments for Training and Testing TRPO
     parser.add_argument('--mode', default='train', type=str, choices=['train', 'test'])
     parser.add_argument('--env', default='Pendulum-v0', type=str)
+    parser.add_argument('--device', type=str, default=None, help='Device on which to run code.')
 
     parser.add_argument('--seeds', nargs='+', type=int, default=0, help='Seed for Reproducibility purposes.')
     parser.add_argument('--curr_seed', type=int, default=0, help='Seed of the current run for parameter saving.')

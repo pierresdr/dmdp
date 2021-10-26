@@ -25,7 +25,7 @@ class DTRPO:
                  backtrack_iters=30, backtrack_coeff=0.8, lam=0.97, max_ep_len=1000, save_dir=None,
                  enc_lr=0.001, maf_lr=0.001, train_enc_iters=1, pretrain_epochs=50, pretrain_steps=5000, 
                  enc_loss='mse', size_pred_buf=4000, batch_size_pred=4000, train_continue=False,
-                 save_period=1, epochs_belief_training=50, use_belief=True,):
+                 save_period=1, epochs_belief_training=50, use_belief=True, device=None,):
         """
         Trust Region Policy Optimization
         Schulman, John, et al. "Trust region policy optimization." International conference on machine learning. 2015.
@@ -83,6 +83,12 @@ class DTRPO:
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
 
+        # Set device
+        if device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = device
+
         # Environment
         self.env = env
         self.env.action_space.seed(seed)
@@ -92,7 +98,7 @@ class DTRPO:
         self.use_belief = use_belief
 
         # Actor-Critic Module
-        self.ac = actor_critic(self.obs_dim, self.env.action_space, self.env.state_space, use_belief=use_belief, **ac_kwargs)
+        self.ac = actor_critic(self.obs_dim, self.env.action_space, self.env.state_space, use_belief=use_belief, **ac_kwargs).to(self.device)
 
         # Value Function Optimizer
         self.vf_lr = vf_lr
@@ -166,27 +172,27 @@ class DTRPO:
     def compute_loss_pi(self, data):
         obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
         # Policy loss
-        _, logp = self.ac.pi(obs, act)
+        _, logp = self.ac.pi(obs.to(self.device), act.to(self.device))
         ratio = torch.exp(logp - logp_old)
         loss_pi = -(ratio * adv).mean()
         return loss_pi
 
     def compute_loss_v(self, data):
         obs, ret = data['obs'], data['ret']
-        return ((self.ac.v(obs) - ret) ** 2).mean()
+        return ((self.ac.v(obs.to(self.device)) - ret.to(self.device)) ** 2).mean()
 
     def compute_loss_enc_deter(self, data):
         """Compute the loss of the belief module for deterministic env.
         """
         obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
-        preds = self.ac.enc.predict(obs)
-        return self.ENCLoss(preds[mask], states)
+        preds = self.ac.enc.predict(obs.to(self.device))
+        return self.ENCLoss(preds[mask], states.to(self.device))
 
     def compute_loss_enc_stoch(self, data):
         """Compute the loss of the belief stochastic for deterministic env.
         """
         obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
-        u, log_probs = self.ac.enc.log_probs(obs, states, torch.from_numpy(mask))
+        u, log_probs = self.ac.enc.log_probs(obs.to(self.device), states.to(self.device), torch.from_numpy(mask).to(self.device))
         if self.epoch % self.save_period == 0:
             self.save_noise(u)
             self.save_proba(log_probs)
@@ -203,7 +209,7 @@ class DTRPO:
     def save_hidden_state(self, obs):
         num_samples = min(obs.size(0), 100)
         with torch.no_grad():
-            obs = self.ac.enc(obs).detach()
+            obs = self.ac.enc(obs.to(self.device)).detach()
         obs = obs[:num_samples]
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
         ax.hist(obs.detach().numpy())
@@ -213,7 +219,7 @@ class DTRPO:
     def save_belief(self, obs):
         num_samples = min(obs.size(0),100)
         with torch.no_grad():
-                cond = self.ac.enc.get_cond(obs).detach()
+                cond = self.ac.enc.get_cond(obs.to(self.device)).detach()
         cond = cond[:num_samples]
         samples = self.ac.enc.maf_proba.sample(num_samples=num_samples, cond_inputs=cond)
         fig, ax = plt.subplots(1, 1, figsize=(6, 5))
@@ -236,7 +242,7 @@ class DTRPO:
 
     def compute_kl(self, data, old_pi):
         obs, act = data['obs'], data['act']
-        pi, _ = self.ac.pi(obs, act)
+        pi, _ = self.ac.pi(obs.to(self.device), act.to(self.device))
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
         return kl_loss
 
@@ -252,7 +258,7 @@ class DTRPO:
     def compute_kl_loss_pi(self, data, old_pi):
         obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
         # Policy loss
-        pi, logp = self.ac.pi(obs, act)
+        pi, logp = self.ac.pi(obs.to(self.device), act.to(self.device))
         ratio = torch.exp(logp - logp_old)
         loss_pi = -(ratio * adv).mean()
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
@@ -286,7 +292,7 @@ class DTRPO:
             data = self.buf.get()
             obs = data['obs']
             with torch.no_grad():
-                obs = self.ac.enc(obs).detach()
+                obs = self.ac.enc(obs.to(self.device)).detach()
             data['obs'] = obs
             # Policy Update
             self.update_pi(data)
@@ -301,7 +307,7 @@ class DTRPO:
             data = self.buf.get()
             obs = data['obs']
             with torch.no_grad():
-                obs = self.ac.enc(obs).detach()
+                obs = self.ac.enc(obs.to(self.device)).detach()
             data['obs'] = obs
             # Policy Update
             self.update_pi(data)
@@ -313,7 +319,7 @@ class DTRPO:
         # Compute old pi distribution
         obs, act = data['obs'], data['act']
         with torch.no_grad():
-            old_pi, _ = self.ac.pi(obs, act)
+            old_pi, _ = self.ac.pi(obs.to(self.device), act.to(self.device))
 
         pi_loss = self.compute_loss_pi(data)
         pi_l_old = pi_loss.item()
@@ -405,7 +411,7 @@ class DTRPO:
 
     def step_training(self, o, t, episode, ep_rewards, ep_lengths, ep_ret, ep_len, pretrain):
         # Select a new action
-        a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+        a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0).to(self.device))
 
         # Execute the action
         next_o, r, d, info = self.env.step(a.reshape(-1))
@@ -428,7 +434,7 @@ class DTRPO:
                 prGreen('\tWarning: trajectory cut off by epoch at %d steps.' % ep_len)
             # If Episode didn't reach terminal state, bootstrap value target of the reached state
             if timeout or epoch_ended:
-                _, v, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+                _, v, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0).to(self.device))
             # If the Trajectory ended by its own, set State Value to 0
             else:
                 v = 0
@@ -612,7 +618,7 @@ class DTRPO:
             ep_ret = 0.0
             while step < max_steps:
                 # Select an Action
-                a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+                a, _, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0).to(self.device))
                 # Execute the Action
                 next_o, r, d, _ = self.env.step(a.reshape(-1))
                 o = self.format_o(next_o)
