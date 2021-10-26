@@ -297,6 +297,7 @@ class DTRPO:
             # Value Function Update
             v_loss = self.update_v(data)
             self.v_losses.append(v_loss)
+            del data
         # Else optimize Policy and Value Function
         else:
             self.enc_losses.append(self.update_enc())
@@ -309,7 +310,7 @@ class DTRPO:
             # Value Function Update
             v_loss = self.update_v(data)
             self.v_losses.append(v_loss)
-        del data
+            del data
 
     def update_pi(self, data):
         # Compute old pi distribution
