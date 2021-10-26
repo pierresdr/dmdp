@@ -12,7 +12,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 from utils.various import *
 
-
+from memory_profiler import profile
 
 
 EPS = 1e-8
@@ -270,6 +270,7 @@ class DTRPO:
 
         return flat_grad_grad_kl + v * self.damping_coeff
 
+    @profile
     def update(self, pretrain=False, stop_belief_training=False):
         # If Pretraining then optimize only the Encoder
         if pretrain:
@@ -402,6 +403,99 @@ class DTRPO:
             o = torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
         return o
 
+    def step_training(self, o, t, episode, ep_rewards, ep_lengths, ep_ret, ep_len, pretrain):
+        # Select a new action
+        a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+
+        # Execute the action
+        next_o, r, d, info = self.env.step(a.reshape(-1))
+        next_o = self.format_o(next_o)
+        ep_ret += np.sum(r)
+        ep_len += 1
+
+        # Save the visited transition in to the Buffer
+        self.buf.store(o, a, np.sum(r), v, not d, info, logp, episode, pretrain=pretrain)
+        o = next_o
+
+        # Is the episode terminated and why?
+        timeout = ep_len == self.max_ep_len
+        terminal = d or timeout
+        epoch_ended = t == self.steps_per_epoch - 1
+
+        if terminal or epoch_ended:
+            # If Epoch ended before Episode could end
+            if epoch_ended and not terminal:
+                prGreen('\tWarning: trajectory cut off by epoch at %d steps.' % ep_len)
+            # If Episode didn't reach terminal state, bootstrap value target of the reached state
+            if timeout or epoch_ended:
+                _, v, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
+            # If the Trajectory ended by its own, set State Value to 0
+            else:
+                v = 0
+            # Let the Buffer adjust itself when an Episode has ended
+            self.buf.finish_path(v)
+            if terminal:
+                # Only print EpRet and EpLen if Episode finished (otherwise they're not indicative)
+                ep_rewards.append(ep_ret)
+                ep_lengths.append(ep_len)
+
+            # Prepare for interaction with environment for the next episode:
+            # Start recording timings, reset the environment to get s_0
+            o, ep_ret, ep_len = self.env.reset(), 0, 0
+            o = self.format_o(o)
+
+            # Update Episode counting variable
+            episode += 1
+        return o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len
+
+
+    def train_inside_loop(self, o, start_time, ep_ret, ep_len):
+        # If Pre-Training of Belief Module is (still) active:
+        if self.epoch < self.pretrain_epochs:
+            pretrain = True
+            max_epoch_steps = self.pretrain_steps
+        else:
+            pretrain = False
+            max_epoch_steps = self.steps_per_epoch
+
+        # If Belief Module completed its training:
+        if self.epoch > self.epochs_belief_training:
+            stop_belief_training = True
+        else:
+            stop_belief_training = False
+
+        # Reset Episodes variables
+        ep_rewards = []
+        ep_lengths = []
+        episode = 0
+
+        for t in range(max_epoch_steps):
+            o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len = self.step_training(
+                    o, t, episode, ep_rewards, ep_lengths, ep_ret, ep_len, pretrain)
+            
+
+        # Perform TRPO update at the end of the Epoch
+        self.update(pretrain=pretrain, stop_belief_training=stop_belief_training)
+
+        # Record Timings
+        self.elapsed_time = dt.now() - start_time
+
+        # Gather Epoch results and print them
+        self.avg_reward.append(np.average(ep_rewards))
+        self.std_reward.append(np.std(ep_rewards))
+        self.avg_length.append(np.average(ep_lengths))
+        self.timings.append(self.elapsed_time)
+        self.print_update()
+
+        # Save Epoch Results each "save_period" epochs
+        if self.epoch % self.save_period == 0:
+            self.save_session()
+
+        # Plot all the data of this Epoch
+        self.save_results()
+        return o, ep_ret, ep_len
+    
+
     def train(self):
         # Load previous training final data in order to continue from there
         if self.train_continue:
@@ -413,93 +507,12 @@ class DTRPO:
         o, ep_ret, ep_len = self.env.reset(), 0, 0
         o = self.format_o(o)
 
-        # Set the Variable that will stop Belief Module Training to False
-        stop_belief_training = False
-
         # ---- TRAINING LOOP ----
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
+            o, ep_ret, ep_len = self.train_inside_loop(o, start_time, ep_ret, ep_len)
 
-            # If Pre-Training of Belief Module is (still) active:
-            if self.epoch < self.pretrain_epochs:
-                pretrain = True
-                max_epoch_steps = self.pretrain_steps
-            else:
-                pretrain = False
-                max_epoch_steps = self.steps_per_epoch
-
-            # If Belief Module completed its training:
-            if self.epoch > self.epochs_belief_training:
-                stop_belief_training = True
-
-            # Reset Episodes variables
-            ep_rewards = []
-            ep_lengths = []
-            episode = 0
-
-            for t in range(max_epoch_steps):
-                # Select a new action
-                a, v, logp = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
-
-                # Execute the action
-                next_o, r, d, info = self.env.step(a.reshape(-1))
-                next_o = self.format_o(next_o)
-                ep_ret += np.sum(r)
-                ep_len += 1
-
-                # Save the visited transition in to the Buffer
-                self.buf.store(o, a, np.sum(r), v, not d, info, logp, episode, pretrain=pretrain)
-                o = next_o
-
-                # Is the episode terminated and why?
-                timeout = ep_len == self.max_ep_len
-                terminal = d or timeout
-                epoch_ended = t == self.steps_per_epoch - 1
-
-                if terminal or epoch_ended:
-                    # If Epoch ended before Episode could end
-                    if epoch_ended and not terminal:
-                        prGreen('\tWarning: trajectory cut off by epoch at %d steps.' % ep_len)
-                    # If Episode didn't reach terminal state, bootstrap value target of the reached state
-                    if timeout or epoch_ended:
-                        _, v, _ = self.ac.step(torch.as_tensor(o, dtype=torch.float32).unsqueeze(dim=0))
-                    # If the Trajectory ended by its own, set State Value to 0
-                    else:
-                        v = 0
-                    # Let the Buffer adjust itself when an Episode has ended
-                    self.buf.finish_path(v)
-                    if terminal:
-                        # Only print EpRet and EpLen if Episode finished (otherwise they're not indicative)
-                        ep_rewards.append(ep_ret)
-                        ep_lengths.append(ep_len)
-
-                    # Prepare for interaction with environment for the next episode:
-                    # Start recording timings, reset the environment to get s_0
-                    o, ep_ret, ep_len = self.env.reset(), 0, 0
-                    o = self.format_o(o)
-
-                    # Update Episode counting variable
-                    episode += 1
-
-            # Perform TRPO update at the end of the Epoch
-            self.update(pretrain=pretrain, stop_belief_training=stop_belief_training)
-
-            # Record Timings
-            self.elapsed_time = dt.now() - start_time
-
-            # Gather Epoch results and print them
-            self.avg_reward.append(np.average(ep_rewards))
-            self.std_reward.append(np.std(ep_rewards))
-            self.avg_length.append(np.average(ep_lengths))
-            self.timings.append(self.elapsed_time)
-            self.print_update()
-
-            # Save Epoch Results each "save_period" epochs
-            if epoch % self.save_period == 0:
-                self.save_session()
-
-            # Plot all the data of this Epoch
-            self.save_results()
+            
 
     def print_update(self):
         update_message = '[EPOCH]: {0}\t[AVG. REWARD]: {1:.4f}\t[ENC. LOSS]: {2:.4f}\t[V LOSS]: {3:.4f}\t[ELAPSED TIME]: {4}'

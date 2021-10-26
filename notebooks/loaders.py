@@ -21,14 +21,14 @@ def load_train_std(path, epoch=0):
     return torch.as_tensor(ckpt['std_reward'])
 
 
-def stats_train(method=None, source=None, test_type=None, epoch=0):
-    path = '../output/' + method + '/Pendulum-' + source + '/Results-' + test_type
-    subfolders = [f.path for f in os.scandir(path) if f.is_dir()]
-    rewards = torch.cat(([load_train_avg(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
-    stds = torch.cat(([load_train_std(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
-    mean = torch.mean(rewards, dim=0)
-    std = torch.mean(stds, dim=0)
-    return mean, std
+# def stats_train(method=None, source=None, test_type=None, epoch=0):
+#     path = '../output/' + method + '/Pendulum-' + source + '/Results-' + test_type
+#     subfolders = [f.path for f in os.scandir(path) if f.is_dir()]
+#     rewards = torch.cat(([load_train_avg(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
+#     stds = torch.cat(([load_train_std(folder, epoch).unsqueeze(0) for folder in subfolders]), dim=0)
+#     mean = torch.mean(rewards, dim=0)
+#     std = torch.mean(stds, dim=0)
+#     return mean, std
 
 
 def stats_train(method=None, source=None, test_type=None, epoch=0):

@@ -20,7 +20,7 @@
             "args": [
                 "--mode=train",
                 "--delay=10",
-                "--env=LunarLanderContinuous-v2",//Reacher-v2, LunarLanderContinuous-v2
+                "--env=BicycleRide-v0",//Reacher-v2, LunarLanderContinuous-v2, Bicycle-v0
                 "--seeds","0",//"2",
                 "--delta=0.001",
                 "--max_ep_len=250",
@@ -45,7 +45,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--mode=train",
-                "--env=MountainCarContinuous-v0",
+                "--env=Bicycle-v0",
                 "--delay=3",
                 "--delta=0.001",
                 "--pretrain_epochs=2",
@@ -55,6 +55,7 @@
                 "--epochs=500",
                 "--enc_lr=0.005",
                 "--force_stoch_env",
+                "--seeds", "0","1",
                 "--use_belief",
                 "--enc_causal",
                 "--batch_size_pred=250",
