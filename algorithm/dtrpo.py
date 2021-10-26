@@ -175,6 +175,7 @@ class DTRPO:
         _, logp = self.ac.pi(obs.to(self.device), act.to(self.device))
         ratio = torch.exp(logp - logp_old)
         loss_pi = -(ratio * adv).mean()
+        del obs; del act; del adv; del logp_old; del logp
         return loss_pi
 
     def compute_loss_v(self, data):
@@ -186,6 +187,7 @@ class DTRPO:
         """
         obs, states, mask = data['extended_states'], data['hidden_states'], data['mask']
         preds = self.ac.enc.predict(obs.to(self.device))
+        del obs
         return self.ENCLoss(preds[mask], states.to(self.device))
 
     def compute_loss_enc_stoch(self, data):
@@ -198,6 +200,7 @@ class DTRPO:
             self.save_proba(log_probs)
             # self.save_belief(obs)
             # self.save_hidden_state(obs)
+        del obs; del states; del mask; del u
         return -log_probs.mean()
 
     def save_proba(self, log_probs):
@@ -262,6 +265,7 @@ class DTRPO:
         ratio = torch.exp(logp - logp_old)
         loss_pi = -(ratio * adv).mean()
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
+        del obs; del act; del adv 
         return loss_pi, kl_loss
 
     def hessian_vector_product(self, data, old_pi, v):

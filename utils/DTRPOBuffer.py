@@ -140,6 +140,7 @@ class GAEBufferDeter:
         data = dict(extended_states=torch.as_tensor(extended_states, dtype=torch.float32), 
                     hidden_states=torch.as_tensor(hidden_states, dtype=torch.float32),
                     mask=mask)
+        del extended_states; del hidden_states; del mask
         return data
 
     def reset(self):
