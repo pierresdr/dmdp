@@ -87,7 +87,7 @@ class DTRPO:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             self.device = torch.device(device)
-        prLightPurple('Device'.format(self.device))
+        prLightPurple('Device: {}'.format(self.device))
         
 
         # Environment
