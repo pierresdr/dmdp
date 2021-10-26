@@ -14,6 +14,9 @@ from utils.various import *
 
 import gc
 
+
+torch.backends.cudnn.enabled = False
+
 EPS = 1e-8
 
 
