@@ -12,7 +12,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 from utils.various import *
 
-
+import gc
 
 EPS = 1e-8
 
@@ -499,6 +499,7 @@ class DTRPO:
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
             o, ep_ret, ep_len = self.train_inside_loop(o, start_time, ep_ret, ep_len)
+            gc.collect()
 
             
 
