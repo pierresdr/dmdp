@@ -223,7 +223,7 @@ def format_o(o, env, act_dim=None):
                                 for i in range(act_dim * len(o[1]))]).float()
         return torch.cat((torch.tensor(o[0]), temp_o.reshape(-1)))
     else:
-        return torch.cat((torch.tensor(o[0]), torch.tensor(o[1].astype(float)).reshape(-1)))
+        return np.hstack((o[0], o[1].reshape(-1)))
 
 
 
@@ -271,7 +271,7 @@ def step_training(env, ac, buf, o, t, episode, ep_rewards, ep_lengths, ep_ret, e
 
         # Update Episode counting variable
         episode += 1
-    return o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len
+    return buf, o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len
 
 
 def train_inside_loop(env, ac, buf, o, epoch, epochs_belief_training, pretrain_epochs, 
@@ -300,7 +300,7 @@ def train_inside_loop(env, ac, buf, o, epoch, epochs_belief_training, pretrain_e
     episode = 0
 
     for t in range(max_epoch_steps):
-        o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len = step_training(
+        buf, o, episode, episode, ep_rewards, ep_lengths, ep_ret, ep_len = step_training(
                 env=env, ac=ac, buf=buf, o=o, t=t, episode=episode, ep_rewards=ep_rewards, 
                 ep_lengths=ep_lengths, ep_ret=ep_ret, ep_len=ep_len, pretrain=pretrain,
                 device=device, max_ep_len=max_ep_len, steps_per_epoch=steps_per_epoch)
@@ -332,7 +332,7 @@ def train_inside_loop(env, ac, buf, o, epoch, epochs_belief_training, pretrain_e
 
     # Plot all the data of this Epoch
     save_results(avg_reward, std_reward, enc_losses, v_losses, epoch, save_path=save_path)
-    return o, ep_ret, ep_len, avg_reward, std_reward, avg_length, timings 
+    return buf, o, ep_ret, ep_len, avg_reward, std_reward, avg_length, timings 
     
 
 def train(env, ac, epochs, pretrain_epochs, epochs_belief_training, train_continue,
@@ -354,7 +354,7 @@ def train(env, ac, epochs, pretrain_epochs, epochs_belief_training, train_contin
 
     # ---- TRAINING LOOP ----
     for epoch in range(1, epochs + 1):
-        o, ep_ret, ep_len, avg_reward, std_reward, avg_length, timings = train_inside_loop(
+        buf, o, ep_ret, ep_len, avg_reward, std_reward, avg_length, timings = train_inside_loop(
                 env=env, ac=ac, o=o, epoch=epoch, epochs_belief_training=epochs_belief_training,
                 pretrain_epochs=pretrain_epochs, delta=delta, cg_iters=cg_iters, 
                 backtrack_iters=backtrack_iters, backtrack_coeff=backtrack_coeff,

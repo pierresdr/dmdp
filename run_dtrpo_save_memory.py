@@ -11,6 +11,9 @@ from torch.optim import Adam
 from utils.DTRPOBuffer import GAEBufferDeter
 from algorithm.dtrpo_save_memory import train
 
+
+torch.backends.cudnn.enabled = False
+
 def launch_dtrpo(args, seed):
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env)
