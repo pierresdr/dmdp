@@ -12,7 +12,6 @@ from datetime import datetime as dt
 from datetime import timedelta
 from utils.various import *
 
-from memory_profiler import profile
 
 
 EPS = 1e-8
@@ -88,6 +87,8 @@ class DTRPO:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             self.device = device
+        prLightPurple('Device'.format(self.device))
+        
 
         # Environment
         self.env = env
@@ -174,7 +175,6 @@ class DTRPO:
         _, logp = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
         ratio = torch.exp(logp - data['logp'])
         loss_pi = -(ratio * data['adv']).mean()
-        del data
         return loss_pi
 
     def compute_loss_v(self, data):
@@ -196,9 +196,6 @@ class DTRPO:
         if self.epoch % self.save_period == 0:
             self.save_noise(u)
             self.save_proba(log_probs)
-            # self.save_belief(obs)
-            # self.save_hidden_state(obs)
-        del data
         return -log_probs.mean()
 
     def save_proba(self, log_probs):
@@ -244,7 +241,6 @@ class DTRPO:
     def compute_kl(self, data, old_pi):
         pi, _ = self.ac.pi(data['obs'].to(self.device), data['act'].to(self.device))
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
-        del data
         return kl_loss
 
     # @torch.no_grad()
@@ -262,7 +258,6 @@ class DTRPO:
         ratio = torch.exp(logp - data['logp'])
         loss_pi = -(ratio * data['adv']).mean()
         kl_loss = torch.distributions.kl_divergence(pi, old_pi).mean()
-        del data
         return loss_pi, kl_loss
 
     def hessian_vector_product(self, data, old_pi, v):
@@ -277,7 +272,6 @@ class DTRPO:
 
         return flat_grad_grad_kl + v * self.damping_coeff
 
-    @profile
     def update(self, pretrain=False, stop_belief_training=False):
         # If Pretraining then optimize only the Encoder
         if pretrain:
@@ -297,7 +291,6 @@ class DTRPO:
             # Value Function Update
             v_loss = self.update_v(data)
             self.v_losses.append(v_loss)
-            del data
         # Else optimize Policy and Value Function
         else:
             self.enc_losses.append(self.update_enc())
@@ -310,7 +303,6 @@ class DTRPO:
             # Value Function Update
             v_loss = self.update_v(data)
             self.v_losses.append(v_loss)
-            del data
 
     def update_pi(self, data):
         # Compute old pi distribution
@@ -360,7 +352,6 @@ class DTRPO:
             self.enc_optimizer.step()
         self.ac.enc.eval()
         loss_enc_item = loss_enc.detach().item()
-        del loss_enc
         return loss_enc_item
 
     def update_enc_stoch(self):
@@ -378,7 +369,6 @@ class DTRPO:
 
         self.ac.enc.eval()
         loss_enc_item  = loss_enc.detach().item()
-        del loss_enc
         return loss_enc_item
 
     def update_v(self, data):
@@ -389,7 +379,6 @@ class DTRPO:
             loss_v.backward()
             self.vf_optimizer.step()
         loss_v_item = loss_v.detach().item()
-        del loss_v 
         return loss_v_item
 
     def format_o(self, o):
