@@ -9,6 +9,7 @@ from torch.distributions.normal import Normal
 from utils.various import get_space_dim
 from utils.belief_module import BeliefModuleDeter, BeliefModuleStoch
 
+torch.backends.cudnn.enabled = False
 
 def flat_grads(grads):
     return torch.cat([grad.contiguous().view(-1) for grad in grads])
