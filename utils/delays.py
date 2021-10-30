@@ -189,7 +189,7 @@ class DelayWrapper(Wrapper):
             _, _, done, info = self.step(action)
             # 3b. If the Environment happen to fail before the first Extended State is built, notify it
             if done:
-                logger.warn("The environment failed before delay timesteps.")
+                print("The environment failed before delay timesteps.")
                 return self.reset()
 
             obs_before_start -= info[0]
