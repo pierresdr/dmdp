@@ -118,6 +118,8 @@ class TRPO:
         self.avg_length = []
         self.v_losses = []
         self.timings = []
+        self.failed_reset = [0]
+
 
     def compute_loss_pi(self, data):
         obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
@@ -275,6 +277,8 @@ class TRPO:
                         ep_rewards.append(ep_ret)
                         ep_lengths.append(ep_len)
                     o, ep_ret, ep_len = self.env.reset(), 0, 0
+                    if o[0] is None:
+                        self.failed_reset[-1] += 1
                     o = self.format_o(o)
                     episode += 1
 
@@ -294,6 +298,8 @@ class TRPO:
                 self.save_session()
 
             self.save_results()
+            self.failed_reset.append(0)
+
 
     def print_update(self):
         update_message = '[EPOCH]: {0}\t[AVG. REWARD]: {1:.4f}\t[V LOSS]: {2:.4f}\t[ELAPSED TIME]: {3}'
@@ -314,6 +320,7 @@ class TRPO:
                 'v_losses': self.v_losses,
                 'epoch': self.epoch,
                 'elapsed_time': self.elapsed_time,
+                'failed_reset': self.failed_reset,
                 'timings': self.timings
                 }
 
@@ -335,6 +342,7 @@ class TRPO:
         self.v_losses = ckpt['v_losses']
         self.epoch = ckpt['epoch']
         self.timings = ckpt['timings']
+        self.failed_reset = ckpt['failed_reset']
         self.elapsed_time = ckpt['elapsed_time']
 
     def save_results(self):

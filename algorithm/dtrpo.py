@@ -165,6 +165,7 @@ class DTRPO:
         self.avg_length = []
         self.enc_losses = []
         self.v_losses = []
+        self.failed_reset = [0]
 
         if self.use_belief:
             self.compute_loss_enc = self.compute_loss_enc_stoch
@@ -433,6 +434,8 @@ class DTRPO:
             # Prepare for interaction with environment for the next episode:
             # Start recording timings, reset the environment to get s_0
             o, ep_ret, ep_len = self.env.reset(), 0, 0
+            if o[0] is None:
+                self.failed_reset[-1] += 1
             o = self.format_o(o)
 
             # Update Episode counting variable
@@ -484,6 +487,7 @@ class DTRPO:
 
         # Plot all the data of this Epoch
         self.save_results()
+        self.failed_reset.append(0)
         return o, ep_ret, ep_len
     
 
@@ -527,6 +531,7 @@ class DTRPO:
                 'v_losses': self.v_losses,
                 'epoch': self.epoch,
                 'timings': self.timings,
+                'failed_reset': self.failed_reset,
                 'elapsed_time': self.elapsed_time
                 }
 
@@ -555,6 +560,7 @@ class DTRPO:
         self.enc_losses = ckpt['enc_losses']
         self.v_losses = ckpt['v_losses']
         self.epoch = ckpt['epoch']
+        self.failed_reset = ckpt['failed_reset']
         self.timings = ckpt['timings']
         self.elapsed_time = ckpt['elapsed_time']
 
