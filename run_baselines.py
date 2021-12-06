@@ -7,8 +7,8 @@ def run_trpo_delays(range_low=None, range_high=None,):
     from numpy import prod
 
     hyperparam = {
-        'delay' : [0,5],
         'env' : ["Ant-v2", "HalfCheetah-v2", "Hopper-v2", "Humanoid-v2", "HumanoidStandup-v2", "Reacher-v2", "Swimmer-v2"],
+        'delay' : [0,5],
     }
 
     n_runs = []
@@ -25,11 +25,11 @@ def run_trpo_delays(range_low=None, range_high=None,):
     for i, values in enumerate(itertools.product(*hyperparam.values())):
         if i>=range_low and i<=range_high:
             print(list(zip(names,values)))
-            os.system('python run_trpo.py --env "{1}" --mode train \
-            --seeds 0 1 2 --delay {0} --epochs 1000 --steps_per_epoch 5000 \
+            os.system('python run_trpo.py --env "{0}" --mode train \
+            --seeds 0 1 2 --delay {1} --epochs 1000 --steps_per_epoch 5000 \
             --max_ep_len 250 --delta 0.001 --v_hid 64 --v_l 1 --vf_lr 0.01 \
             --v_iters 3 --pi_hid 64 --pi_l 2 --save_period 100 \
-            --save_dir "./output/{1}/trpo_delay_{0}"'.format(*values))
+            --save_dir "./output/{0}/trpo_delay_{1}"'.format(*values))
 
 
 

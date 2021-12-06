@@ -70,6 +70,6 @@ taskset -ca 1-22 python run_dtrpo.py --env "BicycleRide-v0" --seeds 0 1 2 3 4 5 
 
 
 @REM memory usage 
-mprof run --include-children python -m memory_profiler run_dtrpo.py --mode "train" --env "Bicycle-v0" --delay "3" --delta "0.001" --pretrain_epochs "2" --pretrain_steps "250" --max_ep_len "250" --steps_per_epoch "250" --epochs "500" --enc_lr "0.005" --force_stoch_env --seeds "0" "1" --use_belief --enc_causal --batch_size_pred "250" --stoch_mdp_distrib "Uniform"
+mprof run --multiprocess --include-children --python python run_dtrpo.py --mode "train" --env "Bicycle-v0" --delay "3" --delta "0.001" --pretrain_epochs "2" --pretrain_steps "250" --max_ep_len "250" --steps_per_epoch "250" --epochs "500" --enc_lr "0.005" --seeds "0" "1" --use_belief --enc_causal --batch_size_pred "250" 
 mprof plot --flame
 mprof plot --output memory-profile.png
