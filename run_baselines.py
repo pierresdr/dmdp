@@ -7,8 +7,10 @@ def run_trpo_delays(range_low=None, range_high=None,):
     from numpy import prod
 
     hyperparam = {
-        'env' : ["Ant-v2", "HalfCheetah-v2", "Hopper-v2", "Humanoid-v2", "HumanoidStandup-v2", "Reacher-v2", "Swimmer-v2"],
-        'delay' : [0,5],
+        # 'env' : ["Ant-v2", "HalfCheetah-v2", "Hopper-v2", "Humanoid-v2", "HumanoidStandup-v2", "Reacher-v2", "Swimmer-v2"],
+        'env' : ["Hopper-v2", "Humanoid-v2", "HumanoidStandup-v2", "Reacher-v2", "Swimmer-v2"],
+        # 'delay' : [0,5],
+        'delay' : [5,],
     }
 
     n_runs = []
