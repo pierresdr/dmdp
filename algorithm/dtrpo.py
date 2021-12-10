@@ -12,7 +12,11 @@ from datetime import datetime as dt
 from datetime import timedelta
 from utils.various import *
 
+
+# check memory leak 
 import gc
+import tracemalloc
+tracemalloc.start()
 
 
 torch.backends.cudnn.enabled = False
@@ -503,10 +507,21 @@ class DTRPO:
         o = self.format_o(o)
 
         # ---- TRAINING LOOP ----
+        snapshot = tracemalloc.take_snapshot()
         for epoch in range(1, self.epochs + 1):
             self.epoch = epoch
             o, ep_ret, ep_len = self.train_inside_loop(o, start_time, ep_ret, ep_len)
             gc.collect()
+            snapshot_new = tracemalloc.take_snapshot()
+            top_stats = snapshot_new.compare_to(snapshot, 'lineno')
+
+            print("[ Top 10 differences ]")
+            for stat in top_stats[:10]:
+                print(stat)
+            snapshot = tracemalloc.take_snapshot()
+
+
+
 
             
 

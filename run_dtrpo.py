@@ -9,6 +9,7 @@ from utils.delays import DelayWrapper
 from utils.stochastic_wrapper import StochActionWrapper
 import gym_bicycle
 
+
 def launch_dtrpo(args, seed):
     # ---- ENV INITIALIZATION ----
     env = gym.make(args.env)
